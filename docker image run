@@ -1,0 +1,5 @@
+# Commands to create docker image and acces it.
+docker build -t mychurn_app
+
+docker run -p 5000:5000
+mychurn_app

@@ -25,8 +25,11 @@ warnings.filterwarnings("ignore")
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay,roc_auc_score, roc_curve, f1_score, accuracy_score
 from sklearn.metrics import make_scorer, precision_score, precision_recall_curve
 from sklearn.metrics import recall_score
-import warnings
-warnings.filterwarnings('ignore')
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import cross_val_score, StratifiedKFold
+import pickle
+
 
 print(sklearn.__version__)
 pd.set_option('display.max_columns',None)
@@ -34,10 +37,13 @@ pd.set_option('display.max_rows',None)
 pd.set_option("display.precision", 2)
 from IPython.display import display
 
+"""**We have import almost all libraries and mothods require for the project. Remaining we will import at the time of use**![precision.jpg](data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCABNAZYDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD4DXPTNIaXcKSgAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACikooAWiiigAooop2AKKSlpAFFFFABRRRQAUUUUAFFFN3igB1FN8wUtAC0UUUAFFFFAHb/DX4U3XxIt/EN2uu6N4c07QrRLy8vtblljiCvIsaqvlRyMzFmACgc13t5+yfdabY+Db27+JHgm0tfF6u2jTXEmootwEZVbJNl+7wXUfvNvWvH7HxNqWlaFq2kW1z5enasIVvYvLUmURtvQbiMjDYPBGcDPSvof8AadYxfs4fszSp8sq6RqDBlJ4Ilg55qnazl00/4JhzyU1B9b/hsfPHirw5deD/ABRrOgX7RtfaVezWE5hYlDJE7IxUkAkZU4yBWVX1n8NfF3hnUPgJ40+I/jLwBoPjDxFpvia1826uEaGa/wDtLtJMJCuUBwzgbUCj5SQcVz95N4T1f9mGfxvaeA9B0u+sPHqWcUamaUzWjQvOtvM7OGdRuCnZsyFHAPNJ2jLlfl+JtGUanw92vuPmyivvHxF8BPAM/wC0h4mD6Npen6B4d8DR+I00cealrNcCFSDIseZGjDNuYLljgDDZNfPfxxk8Ea14B8J6zoR0n/hK1nuLPWH8M6Zd2mmTLw0LATxRqsoXgqg5BDelZc6lFS7/AOY0m27PQyfAP7P83j/4d634yh8beGNJ0vQ/K/tWHUft/n2fmyFItyxWrh95XI8stgHnB4qj4y+Ber+F/ANp44sNY0fxZ4SnumsX1TQ5ZitvcAbvKmjmiikjYg5GUwQRzyM+s/sy/wBjD9mX9oCTXoL2fSo10Zp49OlSKc/6RLjazqyjnHUHiubh+KmjeKPAehfBPwTpN74f8N614ghutT1bWbtLq5kkkdI1OEjjREQBT0ySo5HOd6qUHyx3tH8dzTlSjGT8/wADwPaR14NG019r2fwr8HeJP2k/FXwMHhXS9L8O6bYzpZ60EYanDcRQLKLmScn95licxkbNvQDGab4Z+GXhLW/hvZweFrHwpqOuJ4Vml1Dwv4gs5LbXJrw2rv8AbbSeT/WpllkRVAjKLxyQRNtOdbf5bmUfely9dvwufLfjj4Wap4B0Hwfq17e6ZeQeKLL7faR2Fz5kkKZAxMpA2Nk9BnkEZyCKd4X+Euu+Jvitb/Dxms9H8RS3j2DDU5xHDDMgYsHdQ3dSOM5OAM5r3+1h8OW8/wCy94ntPBPh+0ufEF7Pb6hbJFIYJil/HAkpBkJZwvzDcSuTyCOK0PGTW2u/tnRR6v4A8PXPh2+8bXPh+WZ4psXrtcxeZI5845mRZUIIAX94flPanG0uTrf9DRR9xt9LfnY+Sdc0mXQda1DTJ5IZZ7K4ktpJLd98bMjFSVbupI4PcVRr608A+F/CfjLxV8b/AIcp4K0afxJaDVrnwve7JVmDwzMDbgCUKTs5j+Xjac5HFbHhH4d+B/GnxhvPC134S0PT08B+E5tT1RbRrny9T1OKGLzUnZWdvKjkYgrGu4+W/XIUZx1FFXu2fGlFfWmi2nwh8Yap4D1LVrXTrq+iu76316Twlot+mltAls8sEzwtFH80TANIqAZjVieAccp+1D4Bg8O+FfBur6bH4Q1XTLq5vov+Ek8HJ5EN42ISkU0H/LKWMB+ASCGz1zk+ypedgtq0j52op1NpkhRRRQAUUUUAFFFFABRRRQAUUUUAFFFFAH0v4F0HwNN+yd4l8eah8OtF1PxHoWr22lRTT32ppHcJIqFpJUju1BfLH7m1enFR+NvgtoXjb4CeAPH/AIN8NP4e8T69rEmht4csriaeG9ZfMxPAJ3eQcptKl2Hv69j8E9evvAv7Hfji00fxl4f0LxjqWq2uo6bbf8JPp8F01uoi8wlGmBQ7VfKPhjjGOa+a9V8Z+LPi94l05Nd1+fWr7d5VtJrOpJFBAp6gPM6xxKcDJyoJ60+Vzqcr02/4JMb25n5/8A0/F/7PPxJ8A2C3viDwbqmmWzXKWYkkjDAzOAUT5SeTnA9SCByMVR8ZfBXxx8P9Jg1TX/Dl3p2nyv5X2htriKTaGEUoUkxSbTnY4Vsdq+qvid8Z7Twp+2to3ibU/FNn4g+GT39ncmLRdciv7VGitI4vPkgidtjxyMWBZQTsO3NY+ueNJPh/qniS71C38Dr4J1nxPYapI2jalJqV1rqRXwmMiobuXyvk3l2aNc7tmMnAUVzOy03/AAew5e62l0Pn28/Z1+JNjoC6vP4Q1CO0Pl7lwvnRCQ7Y2khDeZGrE4DMoU5rpvjL8IrmX4pWHh/wb8Otb8LO+jQXkulancCaQcESXDOXIjjJGMsVAxzjOK7v45aZrd949+I3iXSfiRpJ8GeLnWe3ktdcgxqql18mzkgEgZDHnBaVVVAjFiAefRpdU/s34heG73TNe8Ca4tp8MLPRr3S9S1uxurPUpo3iSaweRLjETkuCrsdrFMDI3EKKTtUeluhT0SseIfB/4Aavb+OLqz8ZfDPW/FdmdGmvYrPSbxIyhYssNwZFkCtHujccMQeuGxg+YeBfhL4u+IlnNc+H9Dnv7W3dYZLlmSKHzW+7EJHZVaQ9kBLHsK+wPCkvgzS/2hvh1rVld6J4IgsPD9+ms6HceK7WWy0mSRLtY44JZJsP5jyb2jjLbN4LBcmvLdc0kfEb9nPwJ4L8OaposPiTwnq2p/2zp9xrNpbpKZZA0d2kjSCOdFVdm9GbHHY5q3svu/EFu/v/AOAeQ+HfgL8RPFi6wdJ8GavenR5TBfotsVe3kGPkZGwwbkfLjJ7Csnx18M/E/wAM7iyh8TaLcaS17EZrZpQGSZAcEo6kq2DjIByM84r7T1zx54a8afFL4xaz4f8AEXh2zt7rwA/hiDUbvW7SybVNSCxfNEJpEZkIBXzcbDs+9yK8X+M+n2y/ssfB7TI9b8P3uq6HNqjalY6fr1jdT24ubhXhJjimZmyoJO0Hbj5sVEnZX9PxLUU5NX7nzbuHpijiu7+EvjhPA91qEp8VeLfDC3KKPM8J3HlPNgk4kPmpkDPHXqa9J/4X9D/0Vr4yf+DH/wC6qZmfPXmLTq0fFmpDXPEepagt9f6l9ouHl+2ao+66nyxO+U5bLnjPJ5zzW94d8faHoukwWl/8O/DOv3EQIN9qFzqkdxLliQWEN7HHwCFG1Bwozk5JAOQphA9K9FX4peFm/wCaQ+Df/A7W/wD5Y0n/AAs/ww3P/CoPBw/7ftb/APljQB53tHpS16H/AMLO8Mf9Eh8Hf+But/8Ayxo/4Wd4Y/6JD4O/8Ddb/wDljQB55RXog+JvhgnH/CoPB/8A4G63/wDLGmf8LQ8M/wDRHvCH/gbrX/yxoA8+or0Nfid4Yb/mkHg8fW91v/5Y0v8Awszwx/0SHwd/4G63/wDLGgDhLC+l0u+tryFYXmt5FlRbiBJ4iykEB45FZHXI5VgQRwQRXoPij9onxv418N2uga1caLeaRZwvbWduPDemR/Y43xvFuyW4aHOAcxlTkDniom+J3hgIT/wqDwdx/wBP2t//ACxqNfil4XYAj4P+D8f9fut//LGjoFtUxmg/HDxd4b8BXfgywuNKTw5dtvuLOfQbCczOCSrySSQs7MuflYsSvAUjFReC/jL4m8B+H73QbGexu9DvJ1vH0/VNMt76FLpV2idEmVgrhSVyOo6irqfE/wALvnHwg8H8f9Pmuf8AyxpH+J3hj/okHg7/AMDdb/8AljT+J3YWRo69+098Q/EPjbSPF82sQ23iLTbY2kV9Z2FvFJJGUCssxCfv1IGNsu4AE4Ayc8p41+Jus+PobW2v00+ysLVmlh0/SbCGytkkcKHfy4lUFm2rlmyeAM4AFbX/AAs7wxt/5JB4O/8AA3W//ljQPiZ4Y/6JB4O/8Ddb/wDljUfFZdhxdhnhD4/eM/AnhG+8L6NdaTDoV/tF7aXPh7Trn7WFYsvnPLbs8u0sSu8nbnjHGPPmcmQsODkkEAD9BwK9B/4Wb4Y3H/i0Hg7/AMDdb/8AljS/8LO8Mf8ARIPB3/gbrf8A8sa0b6snpy9C9qX7SfjzVrO9jm1G0TUL+0Nhe65Dp1umqXVuVVTFJdKgkZSFUHLZIGCSOKG/aP8AG7aTbWC3GlxPa6YmjW2pxaRbLqEFmsPleSlyE8xQVLZO7d8xwRmqS/E7wxn/AJJB4O/8Ddb/APljSj4oeF9xH/CoPBw46m91v/5Y1F77jXu7FfXvjx408RaP4e0u7vbCKz8PTi40kWOkWdpJZSBt+Y5IoVZct8zDOGYAkEgGtTUf2mPH+reLNL8SzX2mf2xp7NPBMdFs3VbhzGXudjRFDOxiQ+bt3AqMEDiqR+JnhhjgfCLwb/4Ha3/8saF+J3hjp/wqDwdn/r91v/5Y0XdybtoztP8AjN4t034oQ/EO3vLe38WR3P2r7TbWcEEbSEYYmKKNYzuBO75fmySeTmqHh/4j+J/CXjMeLdJ1iez8RCaS4N8mCzvJnzNwIKsG3HKsCCCQQa6VfiF4e+yi6/4U34R+zl/L837Xrm3cP4c/2jjOOcVG3xO8Mf8ARIPB3/gbrf8A8safl2D9Swv7RPjG11zTtU019L0V9P8AtDW1npuk2sFosk8RhmlaBY9juyHblw2AABwMVgeOvilrnj63srG9XT7DSrB5JLXTNH0+GxtoncKHfy4lUF22LknJ4AzjitcfE7wwvX4QeDv/AAN1v/5Y0x/ih4YV9p+D/g/PX/j81v8A+WNC25exSutTz8U2vRB8UPDGP+SP+D//AAO1v/5Y0f8ACzfDH/RIfB3/AIG63/8ALGnYPM87or0T/hZnhj/okPg7/wADdb/+WNIfid4YAz/wqDwd1x/x+63z/wCVGkB55RXoX/C0PC4GT8IfBw9vtut//LGlX4n+GGz/AMWg8H+xN7rfP/lRo20YHnlFeif8LM8Mf9Eh8Hf+But//LGj/hZnhj/okPg7/wADdb/+WNAHndFd5qXxF8O3enXdvD8LPCmnzTQvEl5b3ertLAxBAkQSX7IWU8jcpGRyCMiuCHTrmgBaKKKACiiigBEGOnFOx8248nrnvSCl3UaieojLuJPU0jKeuefWnbqMin0sHmRqNvHb0qReM44o49KMilZPcd29xGX5cDgZzik/hx2xinbhRkelCbAa3zdeaVs7QAcUuR6UbhT0AFz3pKXIpKQBXt3w9+Pmt+E/BPg3wV4T1fVfDsh1+W/1iaxmMH2rzDbxxKJFbcQEicFSAMsOteI10Xw/m0Gz8U2d34iv9SsLC1dbgNpdhHeSyOrqQhR54QqkZ+bcSMD5TnjSDV0ntoRK9nbezPrz9qj4+a/4F/aY+Ivh291vVrvwbfaI2nTaL53m2ytNpwCOsTttTErozMuDgN16HyTX/wBlXStC8Aad4sn+Kvh0QarpNxq2mw3EMtub0QuFeKPzACZPmAC7cscgAgEjJ/as+Jvgn40/ErUvHHhm516C+1F4Fk0zVNMggjhSOBY8iZLmQuSUHymNeGPzcYMnxm+JXgTxt8Jvh34d0K+8RNq3hGzms8aho9vBbXQllEjMGW7kZCuMfdbdx92o5rU9tb/hc0k2pRjHZ7+tkaNv+ynFefEjwH4Ui8d6W6+MtLj1XTNRGn3Ijl3yMqRKmwMGKoWBcKvGMjvzGj/AANpniTxB4k8Sw+GvCmh6y2g/2l9kkupbq8DEbI4EIJUKN7EsAARjceK9R8D/ALQHw3g8RfBjxVrl1r1lqvgTTotJudMttPikhuFjaQpMk3mgqo8wkqUJJXaAPvVHa/tKeHm8P+MPBtp4t8XeFtIvvEMniDSfEmlWqwXEbSg+dbzwJcAmM5GCJCSQCVH3Rnd89ulv1/yCP948H+Lnwt1T4P8Aju98NapPb3ckCxzwXloSYrqCRA8cqZAOCp/A5FfXl14g+Kvi79jP4W6h4Z8YazHrp1TURe37+JBYzSxLJIqI0ssybwuAAu44x04r4/8Ail4wt/Gfi77dZ3usanbxW0NuL/Xrhpbu5ZEAeV9zvsDNkiMMQoOMnkn1bx98WPhzrn7M/hb4b6ZfeKJdX8O3lxfxXl5o1vFBctKX/dttvHZAA/3sNnaPlGaipdwWmt0VpzeVjufj94Wj+PfjL4V+GPD11pes/FP+xCvi7VLO5ja1WZEUl554so7RhZN7LuPIHJwK8stf2cn8W6VHf+AvFVj4ttYtXtdFvt9tJZtaTXEgSCUhwd0LPxvyG9VGawv2dPjMvwQ+JkHiK5sJNT02a1m069tIGCyG3lXa3lk8Bl4YZ67ccZzXofgf4tfDf4V+EdS8KaRceIPEem+J9W0y51m8urNbB7awtpvMMEQjndmmJJ+cMgHBBzyN421v5/eQtdHsv8v8zA8VfAXTvhlfLNd+NY7TUdK1e3sry31XRriEw58xvtMaEEzwAw4yqkncMqARn2u4+D9t49/ae+KEnxE8S6JcatpPhi41MxWelSpbSZ08BZgm1sLD5ivyS5ZAQPTg/id+0R4f8f8Aw3fwbrHizxN4ws7jVYLuy1DWNFh+3aHbIHDor/aCbmRgyqcugIBJbnA09Q/aZ+H99+0F4n8Xxr4iTQfFXhmbw9eefp8CXFgXgjiEqKs7CVf3QJGUOGI5xyXaaS/rQcVFwu9Jafmcx8BPD1xbxfFzT/CHjPQ71E8MXTyteaTcSm9tFjDSNAzqvlOMquXx1yFbGRhRfs0R3XgbwZ4os/Gum31h4m1iPQ444LG63Wl0wJZJAUz8pGPlzuHK5Fbfw7+LHwx8FeNPG14F1+w0fU/DDeGLGLTdKt5WcvbxRSXkga6QIzPG0hjUtnzCN4xzT+BP7RGn/CbwL448OXdnPqf2hl1LwzK0S4tNTQGNJ3UsQvytuOCf9WBk5zWak7bbL+kOdm3bv/TM4/s229vc+Lb6fxpZnwd4WuI7LUPEFraXEoe6d9ggt4mVTK27qchQOdx4zqt+yJrVnca1dXmrpceGrDT7HVItU0awmvZLq1vN5t5UgUBlGIn37iNu3HzZBqv8EPj5D4Q+Gfiv4f6rq+ueGbTV7mHUbTxF4eJ+02N0mFYMgkjLxugCna4IxnB7dL4Z+P3h7RNT1a9sviB490fxGkFja2Xi+fdfS3Sxm4e4+0Wr3O1YmaSMIm5ypTdwWcHWEU9G9bEHg/xI8J2/gnxZd6NZazbeILaOO3mj1KzQrHMJYUk4B5GN+0g85ByAciuu+BPwuk8XfEjTrDXtBvp9GmtLyV2aKWJCUtJpIzvGD99UxzzwO+Ko/tCfEzTvjB8VL3xPptm1tFPbwRyzS26QS3cyRqslw8aMyozsCcAnjHJOa674C/HfxXp/xK0n+3vH+uR6JFa3iul7q83kA/Y5hGCGfb9/Zj3xjnFZRcnB82+o2lt6Hjd74f1TSYvNvtNvLOLO0SXFu8alvQEjrwePavqL/gnj4p16Hx54x0TT9avrPT5PC+o3q2a3zQW4uVESpOQWCK6jgSHBA7ivnDxH8SvGPjCxWy17xZret2SyCUW+o6lNcRhwCAwV2IzgkZ9zXqX7Kfxc8E/BfXPEGseKJNeluNQ0m60aO10fToJgqTBP3plkuY8MCpGwIQeDu7U4X9n52/QKm7S7/qdn408e+OPhz8KxpvxB8b6l4307x7o12I7P+2I9Xis7iGaMwSx3AldDyp3BGOAeQSOOMvP2XYpNNv49D8eaL4g8TadoP/CR3ek2QLQizCguEuQxVpUBBKMqHByCa8n8TazBNcW+m6fquo6x4d092ax/tK3W2dfM2tKfJWSVUJcdA5zjPGcD66j/AGtfh1Hr2qywar4r07wbq/huTw/B4J0/TIIrLRi8QV5wouAk7bgxB2qxEhywxgzGLUXJvf8AyK3aT2/4JxFjbeIfil+yH4H8MtfyXl1cfEVdF0z7fKzJbI9kgjjBOSsYeRjgDgE4Fcb4k/ZludL1Gz0bSfEB1fxTPrcOhNod5psthP5kglInUSH5oMxY34/i5xxnp7T4rfCC3+H+leFlHiu30628cf8ACUG1FhGgS0bbGbNbhbzzAyxAkSgbiQBgferqbz9tCDQNN8Nta61q/wARtS0fXoNW0+bxJpsVpPp1qFdZbUzpJI0rurBS54HUEnGOmpZTbh1Jkkn7p5J4x/Z2GheE/FWtaP4usPEk3g+7jsfEFnb200P2aSRzGHhZ1Amj8wFN+FOR93BzXaf8E9PEur6X+0r4e0qy1S8tNO1JLr7XZW9y0cNyUtZmTzEBCvtbJGc4JyKyPjF8Y9B8W2fiibS/GnjzWk1+bzrbQNXmaKy0rMwkZX23DrPtAKooRQAcnlQKxf2T/ih4T+DHxb03xv4pfWHGlLMtvYaNYRT+eZYJImLySTx7NocEYVs8jjqVRsp3l2/Qbs3H1PdPh3rHiTw9onxIHx78WR6x4Nu9Hnjs9M1PxHb6tdTX5ceQbeNZpJEdRv8AmXaBkZPGR4XpH7Opk03wm/ibxdY+FtY8YIs2haXNayTtJG7FIZbh0H7lJGHykBz3IAzXmHi6TTJvEl9Jot5eX2mPJvhmv7RLWY55IaNJJFXB9HOcZ46V7wPjP4F8dyfC7W/Fk2taPrXgOytbCS10ywS6j1WK2kDwlJWmTyXwCrblYcgj0rJe9FSe6svl3Llbmkumr/yMHSv2WdattK1vUPFuoSeF7LS9Zl0KeSLT5b7yriNFdnmKcRQbZEIkJJOTgYFdHaeE9S0P9m/4r6Hpvi/w/qGiaR4kt49RhXT5Gui32gwQzpPgr5biLfhNxwCOMkN0/h39rqyn8Sa54xXxV4k8B+KdW1+bUb230qyTUrG7sBHCkFs8UkyJ5o2OokCgkE5I4xyOrfGv4eax4N+MthDDrmiX/jnVIdRtLGx0uBrSx8ieSRELm5UnzN43ERjYc4DjFaRt73MvQzafMiX9or4OeCPAOg/DFLDxdYQXF94fs7iZhplykl4Jp5Xa8Y+WQVVWxtY79sajb0FdF8Vfg5rHxh/aM0jw7rvjfw1Za5rGh2M+nXVrpdxa2lyrRkxoECsVcqpbL7ck4AHC1yfxK+MngD4ifDjwpaz22pR+I9N8O6d4ab/QY3SzW3uBJLdRSecN7OmVEeE5ZgWAwayfjz8Z/D/i74ieCfF/gefWItQ8P6bY2ZGrWEVtiW0A8uRTHcS7gxGSpAxtAy3bKTk6q7Xevy0I96yt2/JmZdfs/uvh27v7fxTp93qg8Qv4Z0/RDZ3MdzqF2rouEygVRiRCS5GM4OCQDuaz+yhdxf8ACTWOh+LtN8Q+KvCrR/25osMEkIh3uI2MMzfLMI3YK3CYwcZ4zY+N37S1j4x+M3hXxj4O0n+ytM0G5h1ZLC4RQJNQeUXFy7Yznc4VM+iCt34hftB+E/G2u65rc3ivx5fafr7hpPBN5cyRWVgXkUzfvUuMSxhQ+yMRrncobbt5V3yJrc192ztvY4X4nfs7p8LNH1/+0fEqvr+jSxRT6TcabNbC4Z5Nhe1lkI8+NSD8wVf4TjBzXjK52jPWvqT4uftLaF4o+FPinwfB4g8Q+MbHUrqKTQrPxHp8Yl0BI5i3F0ZpJZSUwi5/hJ3Y5U/Ln459zVO/O0tiV8Kb3CiiimAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAnfPelX07UUq0ALTCo54p9NoAQfL04pBGqgADAHSnUUAIoCjA4HXFFLRQAlOXuO1JSrQAv86iaP0AFS0UARqpySTTlzuz3p1FABTCB6U+m0AJtHpSqxU5BwaKKAF3H1pvfPfpS0UAFFFFABSbRuBxyOh70tFACY+UjsRjFFLRQAlLRRQA4MemTj0pCuRjHvQtLQAU2nU2gAooooA//2Q==)"""
+
+# Upload dataset to collab from local machine
 from google.colab import files
 uploaded = files.upload()
 
-import pandas as pd
+# Read the dataset
 
 def load_and_style_dataframe(file_path):
     """
@@ -72,6 +78,7 @@ df = load_and_style_dataframe(file_path)
 df.head()  # Display the first few rows of the DataFrame
 
 df.head()
+# Show the first 5 rows of the dataset
 
 """**<span style="font-size: 13px;"> We have read dataset using pandas read method. </span>**
 **<span style="font-size: 13px;">Now explore the data. </span>**>
@@ -100,6 +107,7 @@ df.head()
 """
 
 df.describe()
+# Summary Statistics for numerical variables
 
 """**The describe() method in pandas is used to generate descriptive statistics that summarize the central tendency, dispersion, and shape of a dataset’s distribution, excluding NaN values by default.**
 
@@ -117,6 +125,7 @@ df.describe()
 """
 
 df.describe(include='all')
+# Summary Statistics of Categorical variables.
 
 """**For categorical variables it provides the following info.**
 - count: The number of non-null entries.
@@ -127,6 +136,7 @@ df.describe(include='all')
 **Now, Identify the duplicate values in data set and removes them and we don't need to keep duplicates data in dataset so that we ensure data integrity and performance.**
 """
 
+# Check the duplicates values in dataset.
 def find_duplicates(df):
     """
     This function identifies and prints duplicate rows in a DataFrame based on all columns.
@@ -144,6 +154,7 @@ def find_duplicates(df):
 
 duplicates = find_duplicates(df)
 
+# Check the total duplicate values in dataset.
 df.duplicated().sum()
 
 """**There are no any duplicate data in our data set.**
@@ -153,7 +164,7 @@ df.duplicated().sum()
 **Once we deeply observed the data we can say CustomerID is not necessary variable in our dataset. So let's remove the variable permanently.**
 """
 
-# df.drop(columns=['CustomerID'], inplace=True)
+# Drop the unnecessary column s from the dataset.
 import pandas as pd
 
 def drop_customer_id(df):
@@ -172,6 +183,7 @@ drop_customer_id(df)
 
 """**Now let's check the data type of each columns.**"""
 
+# Check the datatype of all the columns.
 df.dtypes
 
 """**At this point we don't need to change the data type of any column. As all the variables are in correct type.**
@@ -179,7 +191,7 @@ df.dtypes
 **Check the null values in dataset and treat them accordingly to ensure the data completeness**
 """
 
-import pandas as pd
+# Check and count the null values in dataset.
 
 def null_proportion(df):
     """
@@ -206,7 +218,8 @@ print(proportion)
 **Let's check the unique values of gender in dataset.**
 """
 
-def analyze_gender(df):
+# Explore the uniqueness of gender column and check the proportion of each.
+def exp_gender(df):
     """
     This function prints the unique values in the 'Gender' column and counts the total number of male customers.
 
@@ -222,14 +235,10 @@ def analyze_gender(df):
     print("Unique genders:", unique_genders)
     print("Total number of male customers:", count_male)
 
-analyze_gender(df)
+exp_gender(df)
 
-"""**Let's check the weight of each unique value in the respective column**
-
-**We have 5013 male customers from the 10000 customers.**
-"""
-
-def analyze_gender(df):
+# Explore the female gender.
+def exp_fgender(df):
     """
     This function prints the unique values in the 'Gender' column and counts the total number of female customers.
 
@@ -245,13 +254,9 @@ def analyze_gender(df):
     print("Unique genders:", unique_genders)
     print("Total number of female customers:", count_female)
 
-analyze_gender(df)
+exp_fgender(df)
 
-"""**We have 4987 female customers from 10000 customers.**
-
-**Now, let's check the uniqueness of customers interms of Contract. and count the weight of each unique value**
-"""
-
+# Explore the uniqueness of Contract column and count hte value of each.
 def contract_counts(df):
     # Unique values in the Contract column
     unique_contracts = df.Contract.unique()
@@ -271,13 +276,7 @@ def contract_counts(df):
 
 contract_counts(df)
 
-"""**We have total 2428 customers from 10000 customers who has annually contract with the company**
-
-**There is no such difference in distribution of  customers interms of contract as all values are close.**
-
-**Now let's check theuniqueness of customers interms of PaymentMethod. And count the weight of all the unique value**
-"""
-
+# Explore the uniqueness of PaymentMethod column and count the each.
 def count_payment_methods(df):
     # Unique payment methods
     unique_values = df["PaymentMethod"].unique()
@@ -295,8 +294,7 @@ count_payment_methods(df)
 
 """**Let's check the uniqueness of customers interms of InternerService**"""
 
-import pandas as pd
-
+# Explore the uniqueness of InternetService column and count the each uniqueness value.
 def summarize_internet_services(df):
     # Unique internet service types
     unique_services = df["InternetService"].unique()
@@ -318,6 +316,7 @@ summarize_internet_services(df)
 
 """**Let's check the customers having online security**"""
 
+# Explore the customers interms of OnlineSecurity column.
 def count_customers_with_online_security(df, column_name):
     customer_having_online_security = (df[column_name] == "Yes").sum()
     customer_not_having_online_security = (df[column_name] == "No").sum()
@@ -327,6 +326,7 @@ def count_customers_with_online_security(df, column_name):
 
 count_customers_with_online_security(df, "OnlineSecurity")
 
+# Explore the proportion of customers interms of  OnlineBackup columns
 def count_customers_by_category(df, column, category):
     count = (df[column] == category).sum()
     return count
@@ -338,6 +338,7 @@ online_backup_no = count_customers_by_category(df, "OnlineBackup", "No")
 print("Customer having online backup:", online_backup_yes)
 print("Customers not having online backup:", online_backup_no)
 
+# Explore and count the  customers interms of DeviceProtection column.
 def count_customers_with_device_protection(df, category="DeviceProtection"):
     customer_with_device_protection = (df[category] == "Yes").sum()
     customer_without_device_protection = (df[category] == "No").sum()
@@ -347,6 +348,7 @@ def count_customers_with_device_protection(df, category="DeviceProtection"):
 
 count_customers_with_device_protection(df)
 
+# Explore and count the customers interms of techSupport
 def count_customers_by_tech_support(df, column_name):
     customer_with_tech_support = (df[column_name] == "Yes").sum()
     customer_without_techsupport = (df[column_name] == "No").sum()
@@ -357,6 +359,7 @@ def count_customers_by_tech_support(df, column_name):
 # Call the function with your DataFrame and column name
 count_customers_by_tech_support(df, "TechSupport")
 
+# Explore and check the customers interms of StreamingTV.
 def count_customers_by_StreamingTV(df, column_name):
     customer_with_StreamingTV = (df[column_name] == "Yes").sum()
     customer_without_StreamingTV = (df[column_name] == "No").sum()
@@ -367,6 +370,7 @@ def count_customers_by_StreamingTV(df, column_name):
 # Call the function with your DataFrame and column name
 count_customers_by_StreamingTV(df, "StreamingTV")
 
+# Explore and check the customers interms of StreamingMovies \.
 def count_customers_by_StreamingMovies(df, column_name):
     customer_with_StreamingMovies = (df[column_name] == "Yes").sum()
     customer_without_StreamingMovies = (df[column_name] == "No").sum()
@@ -377,6 +381,7 @@ def count_customers_by_StreamingMovies(df, column_name):
 # Call the function with your DataFrame and column name
 count_customers_by_StreamingMovies(df, "StreamingMovies")
 
+# Explore and check the proportion of customers interms of Churn
 def count_churn_customers(df):
     churn = (df["Churn"] == "Yes").sum()
     not_churn = (df["Churn"] == "No").sum()
@@ -384,6 +389,8 @@ def count_churn_customers(df):
     print("Customers who didn't churn:", not_churn)
 
 count_churn_customers(df)
+
+df.head(2)
 
 """**We have almost completed the basic Data Exploration task.
 Let's move to the Data Visualization and EDA part.**
@@ -393,6 +400,7 @@ Let's move to the Data Visualization and EDA part.**
 **Before we do EDA, lets separate Numerical and categorical variables for easy analysis.**
 """
 
+# Seperate the categorical and numerical columns from the dataset.
 def seperate_variables(df):
     cat_cols = df.select_dtypes(include=['object']).columns
     num_cols = df.select_dtypes(include=np.number).columns.tolist()
@@ -406,8 +414,9 @@ def seperate_variables(df):
 
 seperate_variables(df)
 
+# Check the outliers in numerical variables.
 num_cols=df.select_dtypes(include=np.number).columns.tolist()
-def analyze_numeric_columns(df, num_cols):
+def sep_numeric_columns(df, num_cols):
 
     for col in num_cols:
         print(col)
@@ -423,11 +432,9 @@ def analyze_numeric_columns(df, num_cols):
         sns.boxplot(x=df[col])
 
         plt.show()
-analyze_numeric_columns(df, num_cols)
+sep_numeric_columns(df, num_cols)
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-
+# Plot categorical variables
 def plot_categorical_variables(df):
     fig, axes = plt.subplots(2, 2, figsize=(18, 18))
     fig.suptitle('Bar plot for all categorical variables in the dataset')
@@ -444,23 +451,7 @@ def plot_categorical_variables(df):
     sns.countplot(ax=axes[1, 1], x='InternetService', data=df, color='red',
                   order=df['InternetService'].value_counts().index)
 
-    sns.countplot(ax=axes[0, 1], x='OnlineSecurity', data=df, color='pink',
-                  order=df['OnlineSecurity'].value_counts().index)
 
-    sns.countplot(ax=axes[1, 1], x='OnlineBackup', data=df, color='yellow',
-                  order=df['OnlineBackup'].value_counts().index)
-
-    sns.countplot(ax=axes[1, 1], x='DeviceProtection', data=df, color='green',
-                  order=df['DeviceProtection'].value_counts().index)
-
-    sns.countplot(ax=axes[1, 1], x='TechSupport', data=df, color='black',
-                  order=df['TechSupport'].value_counts().index)
-
-    sns.countplot(ax=axes[1, 1], x='StreamingTV', data=df, color='red',
-                  order=df['StreamingTV'].value_counts().index)
-
-    sns.countplot(ax=axes[1, 1], x='StreamingMovies', data=df, color='pink',
-                  order=df['StreamingMovies'].value_counts().index)
 
     plt.tight_layout()
     plt.show()
@@ -468,23 +459,19 @@ def plot_categorical_variables(df):
 
 plot_categorical_variables(df)
 
-# plt.figure(figsize=(6,4))
-# sns.countplot(x="Gender", data=df, palette="dark")
-# plt.xlabel("Gender", fontsize=10)
-# plt.show()
-
-"""**From the above chart we can see the weight of customers in basis of gender.**"""
-
+# Visualize the density of Totalcharges
 sns.set(rc={"figure.figsize":(6,4)})
 sns.distplot(df["TotalCharges"], kde=True, color="orange", bins=20)
 
 """**From the above chart we can say that most of the customers paying total charges from 20k to 70k approximately**"""
 
+# Visualize the density of age
 sns.set(rc={"figure.figsize":(6,4)})
 sns.distplot(df["Age"], kde=True, color="orange", bins=20)
 
 """**From the above chart we can conclude that most of the customer's age falls from 20 to 70**"""
 
+# Visualize the density of MonthlyCharges
 sns.set(rc={"figure.figsize":(6,4)})
 sns.distplot(df["MonthlyCharges"], kde=True, color="orange", bins=20)
 
@@ -494,6 +481,7 @@ plt.figure(figsize=(8,6))
 sns.boxplot(data=df)
 plt.show()
 
+# Currently we don't have outliers in our dataset incase of outliers we can handle the using this method.
 def remove_outlier(col):
     sorted(col)
     Q1,Q3 = col.quantile([0.25,0.75])
@@ -508,20 +496,21 @@ upper_range, df["TotalCharges"])
 df["TotalCharges"] = np.where(df["TotalCharges"] < lower_range,
 lower_range, df["TotalCharges"])
 
-# plt.figure(figsize=(8,6))
-# sns.boxplot(data=df)
-# plt.show()
-
+# Visualize the uniqueness of columns values
 df.nunique().plot(kind='bar')
 plt.title('No of unique values in the dataset')
 plt.show()
 
+# Visualize the customers Contract in the basis of gender values
 sns.displot(data=df, x="Age", hue="Contract", col="Gender", kind="kde");
 
+# Visualize the PaymentMethod in the basis of Gender values.
 sns.displot(data=df, x="Age", hue="PaymentMethod", col="Gender", kind="kde");
 
+#Visualize the customers InternetService interms of Gender.
 sns.kdeplot( data=df, x="Tenure", hue="InternetService", fill=True, common_norm=False, palette="tab10");
 
+# Create the pie chart for customers proportion in terms on Contract
 def plot_pie_chart(df):
     # Calculate value counts
     value_counts = df["Contract"].value_counts()
@@ -545,7 +534,7 @@ def plot_pie_chart(df):
     plt.legend(wedges, labels, title="Contract", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
 
     # Adding a title
-    plt.title(f'Distribution of {"Contract"}', fontsize=14, weight='bold')
+    plt.title(f'Proportion of {"Contract"}', fontsize=14, weight='bold')
 
     # Ensuring the pie chart is circular
     plt.axis('equal')
@@ -556,9 +545,7 @@ def plot_pie_chart(df):
 
 plot_pie_chart(df)
 
-df.head(2)
-
-import matplotlib.pyplot as plt
+# Check the porpotion of customers interms of PaymentMethod
 
 def plot_pie_chart(df, colors=None, title=None):
     """
@@ -610,6 +597,7 @@ def plot_pie_chart(df, colors=None, title=None):
 # Example usage
 plot_pie_chart(df, colors=['#fd9999', '#66b3bf', '#9ccf99', '#ffff99'], title='Distribution of PaymentMethod')
 
+# Visualize the proportion of customers interms of InternetService.
 def plot_internet_service_distribution(df):
     # Calculate value counts for InternetService
     payminternetservice_count = df.InternetService.value_counts()
@@ -646,46 +634,25 @@ def plot_internet_service_distribution(df):
 
 plot_internet_service_distribution(df)
 
-df['OnlineSecurity'].value_counts().plot(kind='pie', autopct='%.2f', labels=df['OnlineSecurity'])
+# Check the customers interms of OnlineSecurity
+df['OnlineSecurity'].value_counts().plot(kind='pie', autopct='%1.1f%%', labels=df['OnlineSecurity'])
 
-df['OnlineBackup'].value_counts().plot(kind='pie', autopct='%.2f', labels=df['OnlineBackup'])
+# Check the customers interms of OnlineBackup
+df['OnlineBackup'].value_counts().plot(kind='pie', autopct='%1.1f%%', labels=df['OnlineBackup'])
 
-df['DeviceProtection'].value_counts().plot(kind='pie', autopct='%.2f', labels=df['DeviceProtection'])
+# Check the customers interms of DeviceProtection
+df['DeviceProtection'].value_counts().plot(kind='pie', autopct='%1.1f%%', labels=df['DeviceProtection'])
 
-df['TechSupport'].value_counts().plot(kind='pie', autopct='%.2f', labels=df['TechSupport'])
+# Check the Customers interms of TechSupport.
+df['TechSupport'].value_counts().plot(kind='pie', autopct='%1.1f%%', labels=df['TechSupport'])
 
-df['StreamingTV'].value_counts().plot(kind='pie', autopct='%.2f', labels=df['StreamingTV'])
+#Check the proportion of customers interms of StreamingTV
+df['StreamingTV'].value_counts().plot(kind='pie', autopct='%1.1f%%', labels=df['StreamingTV'])
 
-df['StreamingMovies'].value_counts().plot(kind='pie', autopct='%.2f', labels=df['StreamingMovies'])
+#Check the proportion of the customers interms of StreamingMovies
+df['StreamingMovies'].value_counts().plot(kind='pie', autopct='%1.1f%%', labels=df['StreamingMovies'])
 
-df['InternetService'].value_counts()
-
-plt.figure(figsize=(10,5))
-df['InternetService'].value_counts().plot(kind='bar')
-plt.title('Customer InternetService')
-plt.xlabel('Internet Service')
-plt.ylabel('Count')
-plt.ylim(0, 6000)
-
-plt.figure(figsize=(10,5))
-df['Contract'].value_counts().plot(kind='bar')
-plt.title('Customer Contract')
-plt.xlabel('Contract Type')
-plt.ylabel('Count')
-plt.ylim(0, 6000)
-
-df['PaymentMethod'].value_counts().plot(kind='bar')
-plt.title('Customer Payment Method')
-plt.xlabel('Payment Type')
-plt.ylabel('Count')
-plt.ylim(0, 6000)
-
-df['InternetService'].value_counts().plot(kind='bar')
-plt.title('Customer Internet Service')
-plt.xlabel('Internet Service Type')
-plt.ylabel('Count')
-plt.ylim(0, 6000)
-
+# Calculate the average age of customers interms of Gender
 def calculate_mean_age_by_gender(df):
     """
     Calculate the mean age grouped by 'Gender' from the given DataFrame.
@@ -707,9 +674,7 @@ def calculate_mean_age_by_gender(df):
 
 calculate_mean_age_by_gender(df)
 
-# gt = df.groupby('Gender')['Tenure'].mean().sort_values(ascending=False)
-# df4 = pd.DataFrame(gt)
-# df4
+#Calculate the average Tenure of customers interms of Gender
 def calculate_mean_tenure_by_gender(df):
     """
     Calculate the mean 'Tenure' grouped by 'Gender' from the given DataFrame.
@@ -731,6 +696,7 @@ def calculate_mean_tenure_by_gender(df):
 
 calculate_mean_tenure_by_gender(df)
 
+# Calculate the average MonthlyCgarges by Gender
 def calculate_mean_charges_by_gender(df):
     """
     Calculate the mean monthly charges grouped by gender and return a DataFrame sorted by mean charges in descending order.
@@ -746,10 +712,7 @@ def calculate_mean_charges_by_gender(df):
     return df5
 calculate_mean_charges_by_gender(df)
 
-# gto = df.groupby('Gender')['TotalCharges'].mean().sort_values(ascending=False)
-# df6 = pd.DataFrame(gto)
-# df6
-
+# Calculate the average TotalCgarges by gender
 def calculate_mean_total_charges_by_gender(df):
     # Group by 'Gender' and calculate mean of 'TotalCharges'
     gto = df.groupby('Gender')['TotalCharges'].mean().reset_index()
@@ -761,6 +724,7 @@ def calculate_mean_total_charges_by_gender(df):
 
 calculate_mean_total_charges_by_gender(df)
 
+# Calculate the average age by Contract
 def calculate_mean_age_by_contract(df):
     # Calculate mean age grouped by 'Contract'
     mean_age_by_contract = df.groupby('Contract')['Age'].mean().sort_values(ascending=False)
@@ -772,6 +736,7 @@ def calculate_mean_age_by_contract(df):
 
 calculate_mean_age_by_contract(df)
 
+# Calculate the average Tenure by Contract
 def calculate_mean_tenure_by_contract(df):
     # Group by 'Contract' and calculate mean of 'Tenure'
     ct = df.groupby('Contract')['Tenure'].mean().sort_values(ascending=False)
@@ -782,9 +747,7 @@ def calculate_mean_tenure_by_contract(df):
     return df8
 calculate_mean_tenure_by_contract(df)
 
-# cm = df.groupby('Contract')['MonthlyCharges'].mean().sort_values(ascending=False)
-# df9 = pd.DataFrame(cm)
-# df9
+#Calculate the average MonthlyCgarges by Contract
 def calculate_mean_monthly_charges(df):
     # Group by 'Contract' and calculate the mean of 'MonthlyCharges'
     cm = df.groupby('Contract')['MonthlyCharges'].mean().sort_values(ascending=False)
@@ -796,6 +759,7 @@ def calculate_mean_monthly_charges(df):
 
 calculate_mean_monthly_charges(df)
 
+#Calculate the average TotalCharges by Contract
 def calculate_mean_total_charges(df):
     cto = df.groupby('Contract')['TotalCharges'].mean().sort_values(ascending=False)
     df10 = pd.DataFrame(cto)
@@ -803,6 +767,7 @@ def calculate_mean_total_charges(df):
 
 calculate_mean_total_charges(df)
 
+# Calculate the agerage age by PaymentMethod
 def calculate_mean_age_by_payment_method(df):
     # Group by 'PaymentMethod', calculate mean of 'Age', and sort by mean age descending
     pa = df.groupby('PaymentMethod')['Age'].mean().sort_values(ascending=False)
@@ -811,6 +776,7 @@ def calculate_mean_age_by_payment_method(df):
 
 calculate_mean_age_by_payment_method(df)
 
+# Calculate the average Tenure by PaymentMethod
 def calculate_mean_tenure_by_payment_method(df):
     pt = df.groupby('PaymentMethod')['Tenure'].mean().sort_values(ascending=False)
     df12 = pd.DataFrame(pt)
@@ -818,12 +784,14 @@ def calculate_mean_tenure_by_payment_method(df):
 
 calculate_mean_tenure_by_payment_method(df)
 
+# Calculate the average MonthlyCharges by PaymentMethod
 def calculate_mean_monthly_charges(df):
     pm = df.groupby('PaymentMethod')['MonthlyCharges'].mean().sort_values(ascending=False)
     df13 = pd.DataFrame(pm)
     return df13
 calculate_mean_monthly_charges(df)
 
+# Calculate the average TotalCharges by PaymentMethod.
 def  calculate_mean_total_charges(df):
     # Group by 'PaymentMethod' and calculate mean of 'TotalCharges'
     pto = df.groupby('PaymentMethod')['TotalCharges'].mean().sort_values(ascending=False)
@@ -835,6 +803,7 @@ def  calculate_mean_total_charges(df):
 
 calculate_mean_total_charges(df)
 
+#Calculate the average age by InternetService.
 def calculate_mean_age_by_internet_service(df):
     # Group by 'InternetService' and calculate mean age
     ia = df.groupby('InternetService')['Age'].mean().sort_values(ascending=False)
@@ -846,9 +815,7 @@ def calculate_mean_age_by_internet_service(df):
 
 calculate_mean_age_by_internet_service(df)
 
-# it = df.groupby('InternetService')['Tenure'].mean().sort_values(ascending=False)
-# df16 = pd.DataFrame(it)
-# df16
+#Calculate the average Tenure by InternetService
 
 def calculate_mean_tenure_by_internet_service(df):
     # Group by 'InternetService', calculate mean of 'Tenure', sort in descending order
@@ -861,6 +828,7 @@ def calculate_mean_tenure_by_internet_service(df):
 
 calculate_mean_tenure_by_internet_service(df)
 
+# Calculate the average MonthlyCharges by InternerService.
 def mean_monthly_charges_by_internet_service(df):
     # Group by 'InternetService' and calculate mean of 'MonthlyCharges'
     im = df.groupby('InternetService')['MonthlyCharges'].mean()
@@ -875,15 +843,16 @@ def mean_monthly_charges_by_internet_service(df):
 
 mean_monthly_charges_by_internet_service(df)
 
+#Calculate the average TotalCharges by InternetService.
 def calculate_mean_total_charges(df):
     ito = df.groupby('InternetService')['TotalCharges'].mean().sort_values(ascending=False)
     df18 = pd.DataFrame(ito)
     return df18
 calculate_mean_total_charges(df)
 
-# df = ...  # Incorrect usage, trying to assign ellipsis to df
-df.head()  # AttributeError: 'ellipsis' object has no attribute 'head'
+df.head(2)
 
+# Create the boxplots for given variables
 num_list = ['Age', 'Tenure', 'MonthlyCharges', 'TotalCharges']
 fig = plt.figure(figsize=(15,10))
 for i in range(len(num_list)):
@@ -893,22 +862,27 @@ for i in range(len(num_list)):
 
 df.select_dtypes(include='object').nunique()
 
+# Create a histogram for age
 plt.subplot(1, 2, 2)
 Age = plt.hist(df['Age'], density = True, color = "green")
 plt.title("Customer Age")
 
+# Create a historgam for Tenure
 plt.subplot(1, 2, 2)
 Tenure = plt.hist(df['Tenure'], density = True, color = "red")
 plt.title("Tenure")
 
+# Create histogram for MonthlyCharges
 plt.subplot(1, 2, 2)
 MonthlyCharges = plt.hist(df['MonthlyCharges'], density = True, color = "orange")
 plt.title("Monthly Charges")
 
+#Create histogram for TotalCharges
 plt.subplot(1, 2, 2)
 TotalCharges = plt.hist(df['TotalCharges'], density = True, color = "blue")
 plt.title("TotalCharges")
 
+# Check the density of given variables
 from scipy import stats
 
 num_cols = df.select_dtypes(include=["int64","float64"])
@@ -927,7 +901,7 @@ for i in num_cols.columns:
 
 """**Now let's start Feature Engineering part. Here, we don't need to do much more as we just need to convert caterogical feature into numerical features. To accolplish this we will use different type of encoding methods provided by sklearn library. like label encoder, onehotencoder, ordinal encoder, binary encoder arrordingly**"""
 
-# let's convert contract values into numerical.
+# let's convert contract, PaymentMethod, InternerService and Gender values into numerical using labelencoder.
 from sklearn.preprocessing import LabelEncoder
 
 # Initialize the label encoder
@@ -939,6 +913,7 @@ df['Payment_Method'] = le.fit_transform(df['PaymentMethod'])
 df['Internet_Service'] = le.fit_transform(df['InternetService'])
 df['Gender_encoded'] = le.fit_transform(df['Gender'])
 
+# Convert Categorical variables into numericl using manual mapping method
 # Define the mapping
 onlinesecurity_mapping = {'Yes': 1, 'No': 0}
 onlinebackup_mapping = {'Yes':1, 'No':0}
@@ -958,31 +933,32 @@ df[["Gender","Gender_encoded"]]
 
 """**Let's encode the dependent/ target variable also using manual mapping which is effective and easy to apply.**"""
 
+# Conver the values of Churn into numerical
 churn_mapping = {'Yes':1, 'No':0}
 # Apply the mapping
 df['Churned'] = df['Churn'].map(churn_mapping)
 
 df[["Churn","Churned"]]
 
+# Check the proportion of churn customers interms of Gender
 gc=df.groupby('Gender').sum()['Churned']
 df3=pd.DataFrame(gc)
 df3
 
+# Check the proportion of churn customers interms of Contract
 cc=df.groupby('Contract').sum()['Churned']
 df4=pd.DataFrame(cc)
 df4
 
+# Check the proportion of customers interms of PaymentMethod.
 pc=df.groupby('PaymentMethod').sum()['Churned']
 df5=pd.DataFrame(pc)
 df5
 
+# Check the portion of Churn interm of InternetService
 ic=df.groupby('InternetService').sum()['Churned']
 df6=pd.DataFrame(ic)
 df6
-
-pg=df.groupby('Gender').sum()['Internet_Service']
-df7=pd.DataFrame(pg)
-df7
 
 # Filter for male customers who have churned and have an annual contract
 filtered_df = df[(df['Gender'] == 'Male') & (df['Churn'] == 'Yes') & (df['Contract'] == 'Annually')]
@@ -991,6 +967,8 @@ count = filtered_df.shape[0]
 
 count
 
+# Our dataset is almost balanced as there is not such different between the values of churn.
+# At this point we are not doing resampling mothods to balance the data. We will do later if needed.
 df['Churned'].value_counts()
 
 #we oversample the minority class to balance the label
@@ -1043,6 +1021,8 @@ for index, row in df.iterrows():
 print(df.isna().sum())
 print(np.isfinite(df).sum())
 
+# Data Transformation.
+# Create a new variable('ComputedOverallCharges') using two(['TotalCharges')('MonthlyCharges') existing variables.
 df['ComputedOverallCharges'] = df['MonthlyCharges'] + df['TotalCharges']
 
 # Drop original columns.
@@ -1078,15 +1058,23 @@ df = reorder_columns(df, column_order)
 
 df.head(2)
 
+plt.figure(figsize=(10, 6))
+plt.scatter(df['Age'], df['Tenure'], color='blue')
+
+# Add titles and labels
+plt.title("Scatter Plot of Age vs. Tenure")
+plt.xlabel("Age Dis")
+plt.ylabel("Tenure")
+
+# Show plot
+plt.grid(True)
+plt.show()
+
 df["ComputedOverallCharges"].min()
 
 df["ComputedOverallCharges"].max()
 
 df['ComputedOverallCharges'].idxmin()
-
-# import minmaxscaler and standarscaler from sklearn
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import StandardScaler
 
 # Initialize the MinMaxScaler
 scaler = MinMaxScaler()
@@ -1165,7 +1153,15 @@ y_pred = rf_model.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
 print(f'Accuracy: {accuracy:.2f}')
 
-"""Confusion Matrix and Classification Report"""
+""""Accuracy" refers to the ratio of correctly predicted instances to the total number of instances evaluated. our model has  "Accuracy: 0.49," it means that the model correctly predicted 49% of the instances. This good accuracy for our model as our model is not highly imbalanced. We can slightly improve the accuracy by balancing data but at this poit this good for us as this id development env not production env. We can calculate the accuracy using Accuracy Calculation: Accuracy is calculated using the formula:
+
+Accuracy
+=
+Number of Correct Predictions /
+Total Number of Predictions
+
+Confusion Matrix and Classification Report
+"""
 
 # # Confusion matrix
 # from sklearn.metrics import classification_report
@@ -1179,7 +1175,21 @@ class_report = classification_report(y_test, y_pred)
 print('Classification Report:')
 print(class_report)
 
-"""Cross-Validation Implementation"""
+"""***A confusion matrix is a table used to evaluate the performance of a classification model. It shows the number of correct and incorrect predictions broken down by each class. ***
+
+**A classification report provides detailed metrics to evaluate the performance of a classification model. Each metric helps to understand different aspects of the model's performance for each class and overall.**
+
+**Precision:  Precision measures the proportion of true positive predictions among all positive predictions made by the model. It is calculated as the ratio of true positives to the sum of true positives and false positives.**
+
+
+**Recall (Sensitivity): Recall measures the proportion of true positive predictions among all actual positive instances in the dataset. It is calculated as the ratio of true positives to the sum of true positives and false negatives.**
+
+F1-score: F1-score is the harmonic mean of precision and recall. It provides a single metric that combines both precision and recall, balancing the trade-off between the two.
+
+**Support: Support refers to the number of actual occurrences of the class in the dataset. It is the number of instances in each class.**
+
+Cross-Validation Implementation
+"""
 
 # import numpy as np
 from sklearn.model_selection import cross_val_score, StratifiedKFold

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="UTF-8">
+  <title>Telecom Customer Churn Prediction</title>
+  <link href='https://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet' type='text/css'>
+<link href='https://fonts.googleapis.com/css?family=Arimo' rel='stylesheet' type='text/css'>
+<link href='https://fonts.googleapis.com/css?family=Hind:300' rel='stylesheet' type='text/css'>
+<link href='https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300' rel='stylesheet' type='text/css'>
+
+</head>
+
+<body>
+ <div class="login">
+	<h1>Customer Churn Prediction for Telecom Company.</h1>
+
+     <!-- Main Input For Receiving Query to our ML -->
+    <form action="{{ url_for('predict')}}"method="post">
+
+    	<input type="text" name="Gender" placeholder="Gender" required="required" />
+        <input type="text" name="Contract" placeholder="Contact" required="required" />
+        <input type="text" name="PaymentMethod" placeholder="PaymentMethod" required="required" />
+        <input type="text" name="InternetService" placeholder="InternetService" required="required" />
+        <input type="text" name="OnlineSecurity" placeholder="OnlineSecurity" required="required" />
+        <input type="text" name="OnlineBackup" placeholder="OnlineBackup" required="required" />
+        <input type="text" name="DeviceProtection" placeholder="DeviceProtection" required="required" />
+        <input type="text" name="TechSupport" placeholder="TechSupport" required="required" />
+        <input type="text" name="StreamingTV" placeholder="StreamingTV" required="required" />
+        <input type="text" name="StreamingMovies" placeholder="StreamingMovies" required="required" />
+        <input type="text" name="ComputedOverallCharges_scaled" placeholder="ComputedOverallCharges_scaled" required="required" />
+        <input type="text" name="Age_standardized" placeholder="Age_standardized" required="required" />
+        <input type="text" name="Tenure_standardized" placeholder="Tenure_standardized" required="required" />
+
+        <button type="submit" class="btn btn-primary btn-block btn-large">Predict_churn</button>
+    </form>
+
+   <br>
+   <br>
+   {{ prediction_text }}
+
+ </div>
+
+
+</body>
+</html>

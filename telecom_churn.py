@@ -37,11 +37,41 @@ from IPython.display import display
 from google.colab import files
 uploaded = files.upload()
 
-df = pd.read_csv("telecom_customer_churn.csv")
-pd.set_option("display.max_columns", None)
-pd.set_option("display.max_colwidth", None)
-df.head().style.set_properties(**{'background-color': 'orange',
-'color': 'white','border-color': 'darkblack'})
+import pandas as pd
+
+def load_and_style_dataframe(file_path):
+    """
+    Loads a CSV file into a DataFrame, sets display options, and styles the first few rows.
+
+    Parameters:
+    - file_path (str): The path to the CSV file.
+
+    Returns:
+    - pd.DataFrame: The loaded DataFrame.
+    - pd.io.formats.style.Styler: The styled DataFrame.
+    """
+    # Load the CSV file into a DataFrame
+    df = pd.read_csv(file_path)
+
+    # Set display options
+    pd.set_option("display.max_columns", None)
+    pd.set_option("display.max_colwidth", None)
+
+    # Style the DataFrame
+    df.head().style.set_properties(**{
+        'background-color': 'orange',
+        'color': 'white',
+        'border-color': 'darkblack'
+    })
+
+    return df
+
+# Example usage:
+file_path = "telecom_customer_churn.csv"
+df = load_and_style_dataframe(file_path)
+df.head()  # Display the first few rows of the DataFrame
+
+df.head()
 
 """**<span style="font-size: 13px;"> We have read dataset using pandas read method. </span>**
 **<span style="font-size: 13px;">Now explore the data. </span>**>
@@ -97,14 +127,24 @@ df.describe(include='all')
 **Now, Identify the duplicate values in data set and removes them and we don't need to keep duplicates data in dataset so that we ensure data integrity and performance.**
 """
 
-duplicates = df.duplicated()
-print("Duplicate rows (based on all columns):")
-print(df[duplicates])
+def find_duplicates(df):
+    """
+    This function identifies and prints duplicate rows in a DataFrame based on all columns.
 
-# Count the number of duplicate rows
-num_duplicates = df.duplicated().sum()
+    Parameters:
+    df (pd.DataFrame): The DataFrame to check for duplicates.
 
-print("Number of duplicate rows:", num_duplicates)
+    Returns:
+    pd.DataFrame: A DataFrame containing the duplicate rows.
+    """
+    duplicates = df.duplicated()
+    print("Duplicate rows (based on all columns):")
+    print(df[duplicates])
+    return df[duplicates]
+
+duplicates = find_duplicates(df)
+
+df.duplicated().sum()
 
 """**There are no any duplicate data in our data set.**
 
@@ -113,7 +153,22 @@ print("Number of duplicate rows:", num_duplicates)
 **Once we deeply observed the data we can say CustomerID is not necessary variable in our dataset. So let's remove the variable permanently.**
 """
 
-df.drop(columns=['CustomerID'], inplace=True)
+# df.drop(columns=['CustomerID'], inplace=True)
+import pandas as pd
+
+def drop_customer_id(df):
+    """
+    This function drops the 'CustomerID' column from the DataFrame in place.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame from which to drop the 'CustomerID' column.
+
+    Returns:
+    None
+    """
+    df.drop(columns=['CustomerID'], inplace=True)
+
+drop_customer_id(df)
 
 """**Now let's check the data type of each columns.**"""
 
@@ -124,7 +179,25 @@ df.dtypes
 **Check the null values in dataset and treat them accordingly to ensure the data completeness**
 """
 
-df.isnull().sum() /100
+import pandas as pd
+
+def null_proportion(df):
+    """
+    This function calculates the proportion of null values in each column of the DataFrame
+    and divides these proportions by 100.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame to check for null values.
+
+    Returns:
+    pd.Series: A Series containing the proportion of null values in each column, divided by 100.
+    """
+    null_counts = df.isnull().sum()
+    null_proportion = null_counts / len(df) / 100
+    return null_proportion
+
+proportion = null_proportion(df)
+print(proportion)
 
 """**There is no any null value in any column of the dataset. so we don't need to do anything for null values.**
 
@@ -133,44 +206,70 @@ df.isnull().sum() /100
 **Let's check the unique values of gender in dataset.**
 """
 
-df.Gender.unique()
+def analyze_gender(df):
+    """
+    This function prints the unique values in the 'Gender' column and counts the total number of male customers.
 
-"""**Let's check the weight of each unique value in the respective column**"""
+    Parameters:
+    df (pd.DataFrame): The DataFrame containing the 'Gender' column.
 
-count_male = (df['Gender'] == 'Male').sum()
-print("Total number of male customers", count_male)
+    Returns:
+    None
+    """
+    unique_genders = df['Gender'].unique()
+    count_male = (df['Gender'] == 'Male').sum()
 
-"""**We have 5013 male customers from the 10000 customers.**"""
+    print("Unique genders:", unique_genders)
+    print("Total number of male customers:", count_male)
 
-count_female = (df['Gender'] == 'Female').sum()
-print("Total number of female customers", count_female)
+analyze_gender(df)
+
+"""**Let's check the weight of each unique value in the respective column**
+
+**We have 5013 male customers from the 10000 customers.**
+"""
+
+def analyze_gender(df):
+    """
+    This function prints the unique values in the 'Gender' column and counts the total number of female customers.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame containing the 'Gender' column.
+
+    Returns:
+    None
+    """
+    unique_genders = df['Gender'].unique()
+    count_female = (df['Gender'] == 'Female').sum()
+
+    print("Unique genders:", unique_genders)
+    print("Total number of female customers:", count_female)
+
+analyze_gender(df)
 
 """**We have 4987 female customers from 10000 customers.**
 
 **Now, let's check the uniqueness of customers interms of Contract. and count the weight of each unique value**
 """
 
-df.Contract.unique()
+def contract_counts(df):
+    # Unique values in the Contract column
+    unique_contracts = df.Contract.unique()
 
-"""**We have four types of customers in the basis of contract. Now let's check in deeply for respective values.**"""
+    # Counting occurrences of each contract type
+    monthly_contract_count = (df["Contract"] == "Monthly").sum()
+    quarterly_contract_count = (df["Contract"] == "Quarterly").sum()
+    semi_annually_contract_count = (df["Contract"] == "Semi Annually").sum()
+    annually_contract_count = (df["Contract"] == "Annually").sum()
 
-monthly_contract_count = (df["Contract"]=="Monthly").sum()
-print("Total customers having monthly contract is :", monthly_contract_count)
+    # Printing the counts
+    print("Unique contracts:", unique_contracts)
+    print("Total customers having monthly contract:", monthly_contract_count)
+    print("Total customers having quarterly contract:", quarterly_contract_count)
+    print("Total customers having semi annually contract:", semi_annually_contract_count)
+    print("Total customers having annually contract:", annually_contract_count)
 
-"""**We have total 2524 customers from 10000 customers who has monthly contract.**"""
-
-quarterly_contract_count = (df["Contract"]=="Quarterly").sum()
-print("Total customers having quarterly contract is :", quarterly_contract_count)
-
-"""**We have total 2518 customers from 10000 customers who has quarterly contract.**"""
-
-semi_annually_contract_count = (df["Contract"]=="Semi Annually").sum()
-print("Total customers having semi annually contract is :", semi_annually_contract_count)
-
-"""**We have total 2530 customers from 100000 customers who has semi-annually contract with company**"""
-
-annually_contract_count = (df["Contract"]=="Annually").sum()
-print("Total customers having annually contract is :", annually_contract_count)
+contract_counts(df)
 
 """**We have total 2428 customers from 10000 customers who has annually contract with the company**
 
@@ -179,199 +278,195 @@ print("Total customers having annually contract is :", annually_contract_count)
 **Now let's check theuniqueness of customers interms of PaymentMethod. And count the weight of all the unique value**
 """
 
-df.PaymentMethod.unique()
+def count_payment_methods(df):
+    # Unique payment methods
+    unique_values = df["PaymentMethod"].unique()
 
-paywith_credit_card = (df["PaymentMethod"] =="Credit Card").sum()
-print("Total customers who has done payment through CREDIT CARD!: ", paywith_credit_card)
-
-"""**We have total 2001 customers who has done paymetn through Credit Card for the internet service.**"""
-
-paywith_cheque = (df["PaymentMethod"] =="Cheque").sum()
-print("Total customers who has done payment through CHEQUE!: ", paywith_cheque)
-
-"""**We have total 1950 customers who has done payment through Cheque.**"""
-
-paywith_cash = (df["PaymentMethod"] =="Cash").sum()
-print("Total customers who has done CASH payment: !: ", paywith_cash)
-
-"""**We have total 2010 customers who has done payment of service through cash payment.**"""
-
-paywith_bank_transfer = (df["PaymentMethod"] =="Bank Transfer").sum()
-print("Total customers who has done payment through bank transfer!: ", paywith_bank_transfer)
-
-"""**We have total 2035 customers who has done payment through bank transfer.**"""
-
-paywith_digital_wallet = (df["PaymentMethod"] =="Digital Wallet").sum()
-print("Total customers who has done payment through Digital wallet!: ", paywith_digital_wallet)
-
-"""**We have total 2004 customers who has done service payment through digital wallet.**
-
-**Let's check the uniqueness of customers interms of InternerService**
-"""
-
-df.InternetService.unique()
-
-"""**We have total three types of InternetService. Let's check them individually.**"""
-
-fiber_internet_service = (df["InternetService"] == "Fiber optic") . sum()
-print("Customers with FIBER OPTIC internet service: ", fiber_internet_service)
-
-"""**We have total 3358 customers who are using fiber optic service.**"""
-
-no_internet_service = (df["InternetService"] == "No").sum()
-print("Customers with no internet service: ", no_internet_service)
-
-"""**We have total 3286 customers who are using no service.**"""
-
-dsl_internet_service = (df["InternetService"] == "DSL").sum()
-print("Customer having DSL interner service: ", dsl_internet_service)
-
-"""**We have total 3356 customers who are using DSL dervice.**
-
-**Let's check the customers having online security**
-"""
-
-customer_having_online_security = (df["OnlineSecurity"] == "Yes").sum()
-print("Customers having OnlineSecurity:", customer_having_online_security)
-# yes_count = df['OnlineSecurity'].value_counts().get('Yes')
-# print(yes_count)
-
-"""**We have total 4922 customers who has online security for the services.**"""
-
-customer_not_having_online_security = (df["OnlineSecurity"] == "No").sum()
-print("Customers not having Online Security: ", customer_not_having_online_security)
-
-"""**We have total 5078 customers who has not online security.**"""
-
-customer_having_online_backup = (df["OnlineBackup"] == "Yes").sum()
-print("Customer having online backup: ", customer_having_online_backup)
-
-"""**We have total 5089 customers who have online backup.**"""
-
-customer_not_having_online_backup = (df["OnlineBackup"] =="No").sum()
-print("Customers not having onlinebackup: ", customer_not_having_online_backup)
-
-"""**We have total 4913 customers who has online backup.**"""
-
-customer_with_device_protection = (df["DeviceProtection"] == "Yes").sum()
-print("Customer having device protection: ", customer_with_device_protection)
-
-"""**We have total 5053 customers who are using device protection service.**"""
-
-customer_without_device_protection = (df["DeviceProtection"] == "No").sum()
-print("Customers not having device protection:", customer_without_device_protection)
-
-"""**We have total 4947  ustomers who are not using device protection service.**"""
-
-customer_with_tech_support = (df["TechSupport"] == "Yes").sum()
-print("Customer who are having tech support:", customer_with_tech_support)
-
-"""**We have total 5031 customers who are using techsupport service.**"""
-
-customer_without_techsupport = (df["TechSupport"] == "No").sum()
-print("Customers not having tech support:", customer_without_device_protection)
-
-"""**We have total 4947 customers without tech support service.**"""
-
-having_tvstreaming = (df["StreamingTV"] == "Yes").sum()
-print("Customers having TVStreaming connected:", having_tvstreaming)
-
-"""**We have total 4959 customers having StreamingTV service.**"""
-
-not_having_tvstreaming = (df["StreamingTV"] == "No").sum()
-print("Customers not connected TVstreaming :", not_having_tvstreaming)
-
-"""**We have total 5055 customers without StreamingTV service.**"""
-
-having_movie_streaming = (df["StreamingMovies"] == "Yes").sum()
-print("Customers with movie streaming service:", having_movie_streaming)
-
-"""**We have total 5033 customers having StreamingMovies service.**
-
----
+    # Iterate over each unique payment method
+    for value in unique_values:
+        # Count the number of customers for each payment method
+        count = (df["PaymentMethod"] == value).sum()
+        # Print the result
+        print(f"Total customers who have done payment through {value}: {count}")
 
 
-"""
+# Call the function with your DataFrame
+count_payment_methods(df)
 
-not_having_moviestreaming = (df["StreamingMovies"] == "No").sum()
-print("Customers not having movie streaming service:", not_having_moviestreaming)
+"""**Let's check the uniqueness of customers interms of InternerService**"""
 
-"""**We have total 4967 customers who are not having StreamingMovies service.**"""
+import pandas as pd
 
-churn = (df["Churn"] == "Yes").sum()
-print("Churned customers:", churn)
+def summarize_internet_services(df):
+    # Unique internet service types
+    unique_services = df["InternetService"].unique()
+    print("Unique Internet Service Types:", unique_services)
 
-not_churn = (df["Churn"] == "No").sum()
-print("Customer who didn't churn:", not_churn)
+    # Count of customers with Fiber optic internet service
+    fiber_internet_service = (df["InternetService"] == "Fiber optic").sum()
+    print("Customers with FIBER OPTIC internet service:", fiber_internet_service)
 
-"""**We have almost completed the basic Data Explotation task. Let's move to the Data Visualization and EDA part.**
+    # Count of customers with No internet service
+    no_internet_service = (df["InternetService"] == "No").sum()
+    print("Customers with no internet service:", no_internet_service)
+
+    # Count of customers with DSL internet service
+    dsl_internet_service = (df["InternetService"] == "DSL").sum()
+    print("Customers having DSL internet service:", dsl_internet_service)
+
+summarize_internet_services(df)
+
+"""**Let's check the customers having online security**"""
+
+def count_customers_with_online_security(df, column_name):
+    customer_having_online_security = (df[column_name] == "Yes").sum()
+    customer_not_having_online_security = (df[column_name] == "No").sum()
+
+    print("Customers having", column_name + ":", customer_having_online_security)
+    print("Customers not having", column_name + ":", customer_not_having_online_security)
+
+count_customers_with_online_security(df, "OnlineSecurity")
+
+def count_customers_by_category(df, column, category):
+    count = (df[column] == category).sum()
+    return count
+
+
+online_backup_yes = count_customers_by_category(df, "OnlineBackup", "Yes")
+online_backup_no = count_customers_by_category(df, "OnlineBackup", "No")
+
+print("Customer having online backup:", online_backup_yes)
+print("Customers not having online backup:", online_backup_no)
+
+def count_customers_with_device_protection(df, category="DeviceProtection"):
+    customer_with_device_protection = (df[category] == "Yes").sum()
+    customer_without_device_protection = (df[category] == "No").sum()
+
+    print(f"Customer having {category.lower()} protection: ", customer_with_device_protection)
+    print(f"Customers not having {category.lower()} protection:", customer_without_device_protection)
+
+count_customers_with_device_protection(df)
+
+def count_customers_by_tech_support(df, column_name):
+    customer_with_tech_support = (df[column_name] == "Yes").sum()
+    customer_without_techsupport = (df[column_name] == "No").sum()
+
+    print("Customers who have tech support:", customer_with_tech_support)
+    print("Customers who do not have tech support:", customer_without_techsupport)
+
+# Call the function with your DataFrame and column name
+count_customers_by_tech_support(df, "TechSupport")
+
+def count_customers_by_StreamingTV(df, column_name):
+    customer_with_StreamingTV = (df[column_name] == "Yes").sum()
+    customer_without_StreamingTV = (df[column_name] == "No").sum()
+
+    print("Customers who have StreamingTV:", customer_with_StreamingTV)
+    print("Customers who do not StreamingTV:", customer_without_StreamingTV)
+
+# Call the function with your DataFrame and column name
+count_customers_by_StreamingTV(df, "StreamingTV")
+
+def count_customers_by_StreamingMovies(df, column_name):
+    customer_with_StreamingMovies = (df[column_name] == "Yes").sum()
+    customer_without_StreamingMovies = (df[column_name] == "No").sum()
+
+    print("Customers who have StreamingMovies:", customer_with_StreamingMovies)
+    print("Customers who do not StreamingMovies:", customer_without_StreamingMovies)
+
+# Call the function with your DataFrame and column name
+count_customers_by_StreamingMovies(df, "StreamingMovies")
+
+def count_churn_customers(df):
+    churn = (df["Churn"] == "Yes").sum()
+    not_churn = (df["Churn"] == "No").sum()
+    print("Churned customers:", churn)
+    print("Customers who didn't churn:", not_churn)
+
+count_churn_customers(df)
+
+"""**We have almost completed the basic Data Exploration task.
+Let's move to the Data Visualization and EDA part.**
 
 ***Exploratory Data Analysis (EDA) is a method of analyzing datasets to understand their main characteristics. It involves summarizing data features, detecting patterns, and uncovering relationships through visual and statistical techniques. EDA helps in gaining insights and formulating hypotheses for further analysis.***
 
-
-
-
-
-
+**Before we do EDA, lets separate Numerical and categorical variables for easy analysis.**
 """
 
-df.nunique()
-(df.isnull().sum()/(len(df)))*100
+def seperate_variables(df):
+    cat_cols = df.select_dtypes(include=['object']).columns
+    num_cols = df.select_dtypes(include=np.number).columns.tolist()
 
-"""**Before we do EDA, lets separate Numerical and categorical variables for easy analysis.**"""
+    print("Categorical Variables:")
+    print(cat_cols)
 
-cat_cols=df.select_dtypes(include=['object']).columns
-num_cols = df.select_dtypes(include=np.number).columns.tolist()
-print("Categorical Variables:")
-print(cat_cols)
-print("Numerical Variables:")
-print(num_cols)
+    print("\nNumerical Variables:")
+    print(num_cols)
 
-for col in num_cols:
-    print(col)
-    print('Skew :', round(df[col].skew(), 2))
-    plt.figure(figsize = (15, 4))
-    plt.subplot(1, 2, 1)
-    df[col].hist(grid=False)
-    plt.ylabel('count')
-    plt.subplot(1, 2, 2)
-    sns.boxplot(x=df[col])
+
+seperate_variables(df)
+
+num_cols=df.select_dtypes(include=np.number).columns.tolist()
+def analyze_numeric_columns(df, num_cols):
+
+    for col in num_cols:
+        print(col)
+        print('Skew :', round(df[col].skew(), 2))
+
+        plt.figure(figsize=(15, 4))
+
+        plt.subplot(1, 2, 1)
+        df[col].hist(grid=False)
+        plt.ylabel('count')
+
+        plt.subplot(1, 2, 2)
+        sns.boxplot(x=df[col])
+
+        plt.show()
+analyze_numeric_columns(df, num_cols)
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+def plot_categorical_variables(df):
+    fig, axes = plt.subplots(2, 2, figsize=(18, 18))
+    fig.suptitle('Bar plot for all categorical variables in the dataset')
+
+    sns.countplot(ax=axes[0, 0], x='Gender', data=df, color='blue',
+                  order=df['Gender'].value_counts().index)
+
+    sns.countplot(ax=axes[0, 1], x='Contract', data=df, color='orange',
+                  order=df['Contract'].value_counts().index)
+
+    sns.countplot(ax=axes[1, 0], x='PaymentMethod', data=df, color='purple',
+                  order=df['PaymentMethod'].value_counts().index)
+
+    sns.countplot(ax=axes[1, 1], x='InternetService', data=df, color='red',
+                  order=df['InternetService'].value_counts().index)
+
+    sns.countplot(ax=axes[0, 1], x='OnlineSecurity', data=df, color='pink',
+                  order=df['OnlineSecurity'].value_counts().index)
+
+    sns.countplot(ax=axes[1, 1], x='OnlineBackup', data=df, color='yellow',
+                  order=df['OnlineBackup'].value_counts().index)
+
+    sns.countplot(ax=axes[1, 1], x='DeviceProtection', data=df, color='green',
+                  order=df['DeviceProtection'].value_counts().index)
+
+    sns.countplot(ax=axes[1, 1], x='TechSupport', data=df, color='black',
+                  order=df['TechSupport'].value_counts().index)
+
+    sns.countplot(ax=axes[1, 1], x='StreamingTV', data=df, color='red',
+                  order=df['StreamingTV'].value_counts().index)
+
+    sns.countplot(ax=axes[1, 1], x='StreamingMovies', data=df, color='pink',
+                  order=df['StreamingMovies'].value_counts().index)
+
+    plt.tight_layout()
     plt.show()
 
-cat_cols
 
-fig, axes = plt.subplots(2, 2, figsize = (18, 18))
-fig.suptitle('Bar plot for all categorical variables in the dataset')
-
-sns.countplot(ax = axes[0, 0], x = 'Gender', data = df, color = 'blue',
-              order = df['Gender'].value_counts().index);
-
-sns.countplot(ax = axes[0, 1], x = 'Contract', data = df, color = 'orange',
-              order = df['Contract'].value_counts().index);
-
-sns.countplot(ax = axes[1, 0], x = 'PaymentMethod', data = df, color = 'purple',
-              order = df['PaymentMethod'].value_counts().index);
-
-sns.countplot(ax = axes[1, 1], x = 'InternetService', data = df, color = 'red',
-              order = df['InternetService'].value_counts().index);
-
-# sns.countplot(ax = axes[0, 1], x = 'OnlineSecurity', data = df, color = 'pink',
-#               order = df['OnlineSecurity'].value_counts().index);
-
-# sns.countplot(ax = axes[1, 1], x = 'OnlineBackup', data = df, color = 'yellow',
-#               order = df['OnlineBackup'].value_counts().index);
-
-# sns.countplot(ax = axes[1, 1], x = 'DeviceProtection', data = df, color = 'green',
-#               order = df['DeviceProtection'].value_counts().index);
-
-# sns.countplot(ax = axes[1, 1], x = 'TechSupport', data = df, color = 'black',
-#               order = df['TechSupport'].value_counts().index);
-
-# sns.countplot(ax = axes[1, 1], x = 'StreamingTV', data = df, color = 'red',
-#               order = df['StreamingTV'].value_counts().index);
-
-# sns.countplot(ax = axes[1, 1], x = 'StreamingMovies', data = df, color = 'pink',
-#               order = df['StreamingMovies'].value_counts().index);
+plot_categorical_variables(df)
 
 # plt.figure(figsize=(6,4))
 # sns.countplot(x="Gender", data=df, palette="dark")
@@ -399,19 +494,19 @@ plt.figure(figsize=(8,6))
 sns.boxplot(data=df)
 plt.show()
 
-# def remove_outlier(col):
-#     sorted(col)
-#     Q1,Q3 = col.quantile([0.25,0.75])
-#     IQR = Q3 - Q1
-#     lower_range = Q1 - (1.5 * IQR)
-#     upper_range = Q3 + (1.5 * IQR)
-#     return lower_range,upper_range
+def remove_outlier(col):
+    sorted(col)
+    Q1,Q3 = col.quantile([0.25,0.75])
+    IQR = Q3 - Q1
+    lower_range = Q1 - (1.5 * IQR)
+    upper_range = Q3 + (1.5 * IQR)
+    return lower_range,upper_range
 
-# lower_range,upper_range = remove_outlier(df["TotalCharges"])
-# df["TotalCharges"] = np.where(df["TotalCharges"] > upper_range,
-# upper_range, df["TotalCharges"])
-# df["TotalCharges"] = np.where(df["TotalCharges"] < lower_range,
-# lower_range, df["TotalCharges"])
+lower_range,upper_range = remove_outlier(df["TotalCharges"])
+df["TotalCharges"] = np.where(df["TotalCharges"] > upper_range,
+upper_range, df["TotalCharges"])
+df["TotalCharges"] = np.where(df["TotalCharges"] < lower_range,
+lower_range, df["TotalCharges"])
 
 # plt.figure(figsize=(8,6))
 # sns.boxplot(data=df)
@@ -427,92 +522,129 @@ sns.displot(data=df, x="Age", hue="PaymentMethod", col="Gender", kind="kde");
 
 sns.kdeplot( data=df, x="Tenure", hue="InternetService", fill=True, common_norm=False, palette="tab10");
 
-contract_count = df.Contract.value_counts()
-# Define labels and size:
-labels = contract_count.index
-sizes = contract_count.values
-# Colors for each slice
-colors = ['#ff9999','#66b3ff','#99ff99','#ffcc99']
-# Create the pie chart
-plt.figure(figsize=(10, 6))
+def plot_pie_chart(df):
+    # Calculate value counts
+    value_counts = df["Contract"].value_counts()
 
-wedges, texts, autotexts = plt.pie(sizes, labels=labels, colors=colors,
-                                   autopct='%1.1f%%', shadow=True, startangle=140,
-                                   wedgeprops=dict(edgecolor='w'))
+    # Define labels, sizes, and colors
+    labels = value_counts.index
+    sizes = value_counts.values
+    colors = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99']  # You can customize the colors here
 
-# Customizing text properties
-plt.setp(texts, size=10, weight='bold', color='black')
-plt.setp(autotexts, size=9, weight='bold', color='white')
+    # Create the pie chart
+    plt.figure(figsize=(10, 6))
+    wedges, texts, autotexts = plt.pie(sizes, labels=labels, colors=colors,
+                                       autopct='%1.1f%%', shadow=True, startangle=140,
+                                       wedgeprops=dict(edgecolor='w'))
 
-# Customizing the legend
-plt.legend(wedges, labels, title="Contract Types", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
+    # Customizing text properties
+    plt.setp(texts, size=10, weight='bold', color='black')
+    plt.setp(autotexts, size=9, weight='bold', color='white')
 
-# Adding a title
-plt.title('Distribution of Contract Types', fontsize=14, weight='bold')
+    # Customizing the legend
+    plt.legend(wedges, labels, title="Contract", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
 
-# Ensuring the pie chart is circular
-plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+    # Adding a title
+    plt.title(f'Distribution of {"Contract"}', fontsize=14, weight='bold')
 
-# Display the plot
-plt.show()
+    # Ensuring the pie chart is circular
+    plt.axis('equal')
 
-paymentmethod_count = df.PaymentMethod.value_counts()
-# Define labels and size:
-labels = paymentmethod_count.index
-sizes = paymentmethod_count.values
-# Colors for each slice
-colors = ['#fd9999','#66b3bf','#9ccf99','#ffff99']
-# Create the pie chart
-plt.figure(figsize=(10, 6))
+    # Display the plot
+    plt.show()
 
-wedges, texts, autotexts = plt.pie(sizes, labels=labels, colors=colors,
-                                   autopct='%1.1f%%', shadow=True, startangle=140,
-                                   wedgeprops=dict(edgecolor='w'))
 
-# Customizing text properties
-plt.setp(texts, size=10, weight='bold', color='black')
-plt.setp(autotexts, size=9, weight='bold', color='white')
+plot_pie_chart(df)
 
-# Customizing the legend
-plt.legend(wedges, labels, title="Contract Types", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
+df.head(2)
 
-# Adding a title
-plt.title('Distribution of Contract Types', fontsize=14, weight='bold')
+import matplotlib.pyplot as plt
 
-# Ensuring the pie chart is circular
-plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+def plot_pie_chart(df, colors=None, title=None):
+    """
+    Function to plot a pie chart based on value counts of a specified column in a dataframe.
 
-# Display the plot
-plt.show()
+    Parameters:
+    - dataframe: pandas DataFrame containing the data
+    - column_name: string, name of the column in the dataframe for which to plot the pie chart
+    - colors: list of strings, optional, colors for each slice of the pie chart
+    - title: string, optional, title of the pie chart
 
-payminternetservice_count = df.InternetService.value_counts()
-# Define labels and size:
-labels = payminternetservice_count.index
-sizes = payminternetservice_count.values
-# Colors for each slice
-colors = ['#fdff99','#66b3bE','#9fdf99']
-# Create the pie chart
-plt.figure(figsize=(10, 6))
+    Returns:
+    - None (displays the pie chart using matplotlib)
+    """
+    # Count the occurrences of each unique value in the specified column
+    value_counts = df["PaymentMethod"].value_counts()
 
-wedges, texts, autotexts = plt.pie(sizes, labels=labels, colors=colors,
-                                   autopct='%1.1f%%', shadow=True, startangle=140,
-                                   wedgeprops=dict(edgecolor='w'))
+    # Define labels and sizes for the pie chart
+    labels = value_counts.index
+    sizes = value_counts.values
 
-# Customizing text properties
-plt.setp(texts, size=10, weight='bold', color='black')
-plt.setp(autotexts, size=9, weight='bold', color='white')
+    # Default colors if not provided
+    if colors is None:
+        colors = ['#fd9999', '#66b3bf', '#9ccf99', '#ffff99']
 
-# Customizing the legend
-plt.legend(wedges, labels, title="Contract Types", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
+    # Create the pie chart
+    plt.figure(figsize=(10, 6))
+    wedges, texts, autotexts = plt.pie(sizes, labels=labels, colors=colors,
+                                       autopct='%1.1f%%', shadow=True, startangle=140,
+                                       wedgeprops=dict(edgecolor='w'))
 
-# Adding a title
-plt.title('Distribution of Contract Types', fontsize=14, weight='bold')
+    # Customizing text properties
+    plt.setp(texts, size=10, weight='bold', color='black')
+    plt.setp(autotexts, size=9, weight='bold', color='white')
 
-# Ensuring the pie chart is circular
-plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+    # Adding a legend
+    plt.legend(wedges, labels, title="PaymentMethod", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
 
-# Display the plot
-plt.show()
+    # Adding a title if specified
+    if title:
+        plt.title(title, fontsize=14, weight='bold')
+
+    # Ensuring the pie chart is circular
+    plt.axis('equal')
+
+    # Display the plot
+    plt.show()
+
+# Example usage
+plot_pie_chart(df, colors=['#fd9999', '#66b3bf', '#9ccf99', '#ffff99'], title='Distribution of PaymentMethod')
+
+def plot_internet_service_distribution(df):
+    # Calculate value counts for InternetService
+    payminternetservice_count = df.InternetService.value_counts()
+
+    # Define labels and sizes for the pie chart
+    labels = payminternetservice_count.index
+    sizes = payminternetservice_count.values
+
+    # Colors for each slice
+    colors = ['#fdff99', '#66b3bE', '#9fdf99']
+
+    # Create the pie chart
+    plt.figure(figsize=(10, 6))
+    wedges, texts, autotexts = plt.pie(sizes, labels=labels, colors=colors,
+                                       autopct='%1.1f%%', shadow=True, startangle=140,
+                                       wedgeprops=dict(edgecolor='w'))
+
+    # Customizing text properties
+    plt.setp(texts, size=10, weight='bold', color='black')
+    plt.setp(autotexts, size=9, weight='bold', color='white')
+
+    # Customizing the legend
+    plt.legend(wedges, labels, title="Internet Service Types", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
+
+    # Adding a title
+    plt.title('Distribution of Internet Service Types', fontsize=14, weight='bold')
+
+    # Ensuring the pie chart is circular
+    plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+    # Display the plot
+    plt.show()
+
+
+plot_internet_service_distribution(df)
 
 df['OnlineSecurity'].value_counts().plot(kind='pie', autopct='%.2f', labels=df['OnlineSecurity'])
 
@@ -535,8 +667,6 @@ plt.xlabel('Internet Service')
 plt.ylabel('Count')
 plt.ylim(0, 6000)
 
-df['Contract'].value_counts()
-
 plt.figure(figsize=(10,5))
 df['Contract'].value_counts().plot(kind='bar')
 plt.title('Customer Contract')
@@ -544,15 +674,11 @@ plt.xlabel('Contract Type')
 plt.ylabel('Count')
 plt.ylim(0, 6000)
 
-df["PaymentMethod"].value_counts()
-
 df['PaymentMethod'].value_counts().plot(kind='bar')
 plt.title('Customer Payment Method')
 plt.xlabel('Payment Type')
 plt.ylabel('Count')
 plt.ylim(0, 6000)
-
-df["InternetService"].value_counts()
 
 df['InternetService'].value_counts().plot(kind='bar')
 plt.title('Customer Internet Service')
@@ -560,74 +686,203 @@ plt.xlabel('Internet Service Type')
 plt.ylabel('Count')
 plt.ylim(0, 6000)
 
-# cc=df.groupby('Gender') ['Age'].mean()
-# df3=pd.DataFrame(cc)
-# df3
-ga = df.groupby('Gender')['Age'].mean().sort_values(ascending=False)
-df3 = pd.DataFrame(ga)
-df3
+def calculate_mean_age_by_gender(df):
+    """
+    Calculate the mean age grouped by 'Gender' from the given DataFrame.
 
-gt = df.groupby('Gender')['Tenure'].mean().sort_values(ascending=False)
-df4 = pd.DataFrame(gt)
-df4
+    Parameters:
+    df (pandas.DataFrame): Input DataFrame containing 'Gender' and 'Age' columns.
 
-gm = df.groupby('Gender')['MonthlyCharges'].mean().sort_values(ascending=False)
-df5 = pd.DataFrame(gm)
-df5
+    Returns:
+    pandas.DataFrame: DataFrame with mean age for each gender sorted in descending order.
+    """
+    # Group by 'Gender' and calculate mean age, then sort in descending order
+    ga = df.groupby('Gender')['Age'].mean().sort_values(ascending=False)
 
-gto = df.groupby('Gender')['TotalCharges'].mean().sort_values(ascending=False)
-df6 = pd.DataFrame(gto)
-df6
+    # Create a new DataFrame from the grouped and sorted data
+    df3 = pd.DataFrame(ga)
 
-ca = df.groupby('Contract')['Age'].mean().sort_values(ascending=False)
-df7 = pd.DataFrame(ca)
-df7
+    return df3
 
-ct = df.groupby('Contract')['Tenure'].mean().sort_values(ascending=False)
-df8 = pd.DataFrame(ct)
-df8
 
-cm = df.groupby('Contract')['MonthlyCharges'].mean().sort_values(ascending=False)
-df9 = pd.DataFrame(cm)
-df9
+calculate_mean_age_by_gender(df)
 
-cto = df.groupby('Contract')['TotalCharges'].mean().sort_values(ascending=False)
-df10 = pd.DataFrame(cto)
-df10
+# gt = df.groupby('Gender')['Tenure'].mean().sort_values(ascending=False)
+# df4 = pd.DataFrame(gt)
+# df4
+def calculate_mean_tenure_by_gender(df):
+    """
+    Calculate the mean 'Tenure' grouped by 'Gender' from the given DataFrame.
 
-pa =df.groupby('PaymentMethod')['Age'].mean().sort_values(ascending=False)
-df11 = pd.DataFrame(pa)
-df11
+    Parameters:
+    df (pandas.DataFrame): Input DataFrame containing 'Gender' and 'Tenure' columns.
 
-pt = df.groupby('PaymentMethod')['Tenure'].mean().sort_values(ascending=False)
-df12 = pd.DataFrame(pt)
-df12
+    Returns:
+    pandas.DataFrame: DataFrame with mean age for each gender sorted in descending order.
+    """
+    # Group by 'Gender' and calculate mean age, then sort in descending order
+    gt = df.groupby('Gender')['Tenure'].mean().sort_values(ascending=False)
 
-pm = df.groupby('PaymentMethod')['MonthlyCharges'].mean().sort_values(ascending=False)
-df13 = pd.DataFrame(pm)
-df13
+    # Create a new DataFrame from the grouped and sorted data
+    df4 = pd.DataFrame(gt)
 
-pto = df.groupby('PaymentMethod')['TotalCharges'].mean().sort_values(ascending=False)
-df14 = pd.DataFrame(pto)
-df14
+    return df4
 
-ia = df.groupby('InternetService')['Age'].mean().sort_values(ascending=False)
-df15 = pd.DataFrame(ia)
-df15
 
-it = df.groupby('InternetService')['Tenure'].mean().sort_values(ascending=False)
-df16 = pd.DataFrame(it)
-df16
+calculate_mean_tenure_by_gender(df)
 
-im = df.groupby('InternetService')['MonthlyCharges'].mean().sort_values(ascending=False)
-df17 = pd.DataFrame(im)
-df17
+def calculate_mean_charges_by_gender(df):
+    """
+    Calculate the mean monthly charges grouped by gender and return a DataFrame sorted by mean charges in descending order.
 
-ito = df.groupby('InternetService')['TotalCharges'].mean().sort_values(ascending=False)
-df18 = pd.DataFrame(ito)
-df18
+    Parameters:
+    - df: pandas DataFrame containing 'Gender' and 'MonthlyCharges' columns
 
-df.head(2)
+    Returns:
+    - df5: pandas DataFrame with 'Gender' as index and 'MonthlyCharges' mean values sorted in descending order
+    """
+    gm = df.groupby('Gender')['MonthlyCharges'].mean().sort_values(ascending=False)
+    df5 = pd.DataFrame(gm)
+    return df5
+calculate_mean_charges_by_gender(df)
+
+# gto = df.groupby('Gender')['TotalCharges'].mean().sort_values(ascending=False)
+# df6 = pd.DataFrame(gto)
+# df6
+
+def calculate_mean_total_charges_by_gender(df):
+    # Group by 'Gender' and calculate mean of 'TotalCharges'
+    gto = df.groupby('Gender')['TotalCharges'].mean().reset_index()
+
+    # Sort values in descending order based on mean 'TotalCharges'
+    gto_sorted = gto.sort_values(by='TotalCharges', ascending=False).reset_index(drop=True)
+
+    return gto_sorted
+
+calculate_mean_total_charges_by_gender(df)
+
+def calculate_mean_age_by_contract(df):
+    # Calculate mean age grouped by 'Contract'
+    mean_age_by_contract = df.groupby('Contract')['Age'].mean().sort_values(ascending=False)
+
+    # Create a new DataFrame to store the result
+    result_df = pd.DataFrame(mean_age_by_contract)
+
+    return result_df
+
+calculate_mean_age_by_contract(df)
+
+def calculate_mean_tenure_by_contract(df):
+    # Group by 'Contract' and calculate mean of 'Tenure'
+    ct = df.groupby('Contract')['Tenure'].mean().sort_values(ascending=False)
+
+    # Create a new DataFrame from ct
+    df8 = pd.DataFrame(ct, columns=['Tenure'])
+
+    return df8
+calculate_mean_tenure_by_contract(df)
+
+# cm = df.groupby('Contract')['MonthlyCharges'].mean().sort_values(ascending=False)
+# df9 = pd.DataFrame(cm)
+# df9
+def calculate_mean_monthly_charges(df):
+    # Group by 'Contract' and calculate the mean of 'MonthlyCharges'
+    cm = df.groupby('Contract')['MonthlyCharges'].mean().sort_values(ascending=False)
+
+    # Create a DataFrame from the Series cm
+    df9 = pd.DataFrame(cm)
+
+    return df9
+
+calculate_mean_monthly_charges(df)
+
+def calculate_mean_total_charges(df):
+    cto = df.groupby('Contract')['TotalCharges'].mean().sort_values(ascending=False)
+    df10 = pd.DataFrame(cto)
+    return df10
+
+calculate_mean_total_charges(df)
+
+def calculate_mean_age_by_payment_method(df):
+    # Group by 'PaymentMethod', calculate mean of 'Age', and sort by mean age descending
+    pa = df.groupby('PaymentMethod')['Age'].mean().sort_values(ascending=False)
+    df11 = pd.DataFrame(pa)  # Creating DataFrame with column 'MeanAge'
+    return df11
+
+calculate_mean_age_by_payment_method(df)
+
+def calculate_mean_tenure_by_payment_method(df):
+    pt = df.groupby('PaymentMethod')['Tenure'].mean().sort_values(ascending=False)
+    df12 = pd.DataFrame(pt)
+    return df12
+
+calculate_mean_tenure_by_payment_method(df)
+
+def calculate_mean_monthly_charges(df):
+    pm = df.groupby('PaymentMethod')['MonthlyCharges'].mean().sort_values(ascending=False)
+    df13 = pd.DataFrame(pm)
+    return df13
+calculate_mean_monthly_charges(df)
+
+def  calculate_mean_total_charges(df):
+    # Group by 'PaymentMethod' and calculate mean of 'TotalCharges'
+    pto = df.groupby('PaymentMethod')['TotalCharges'].mean().sort_values(ascending=False)
+
+    # Create a new DataFrame 'df14' from 'pto'
+    df14 = pd.DataFrame(pto)
+
+    return df14
+
+calculate_mean_total_charges(df)
+
+def calculate_mean_age_by_internet_service(df):
+    # Group by 'InternetService' and calculate mean age
+    ia = df.groupby('InternetService')['Age'].mean().sort_values(ascending=False)
+
+    # Convert to DataFrame with column name 'Age'
+    df15 = pd.DataFrame(ia, columns=['Age'])
+
+    return df15
+
+calculate_mean_age_by_internet_service(df)
+
+# it = df.groupby('InternetService')['Tenure'].mean().sort_values(ascending=False)
+# df16 = pd.DataFrame(it)
+# df16
+
+def calculate_mean_tenure_by_internet_service(df):
+    # Group by 'InternetService', calculate mean of 'Tenure', sort in descending order
+    it = df.groupby('InternetService')['Tenure'].mean().sort_values(ascending=False)
+
+    # Create a new DataFrame 'df16' from the sorted results
+    df16 = pd.DataFrame(it, columns=['Tenure'])
+
+    return df16
+
+calculate_mean_tenure_by_internet_service(df)
+
+def mean_monthly_charges_by_internet_service(df):
+    # Group by 'InternetService' and calculate mean of 'MonthlyCharges'
+    im = df.groupby('InternetService')['MonthlyCharges'].mean()
+
+    # Sort the result in descending order
+    im_sorted = im.sort_values(ascending=False)
+
+    # Create a DataFrame from the sorted series
+    df17 = pd.DataFrame(im_sorted, columns=['MonthlyCharges'])
+
+    return df17
+
+mean_monthly_charges_by_internet_service(df)
+
+def calculate_mean_total_charges(df):
+    ito = df.groupby('InternetService')['TotalCharges'].mean().sort_values(ascending=False)
+    df18 = pd.DataFrame(ito)
+    return df18
+calculate_mean_total_charges(df)
+
+# df = ...  # Incorrect usage, trying to assign ellipsis to df
+df.head()  # AttributeError: 'ellipsis' object has no attribute 'head'
 
 num_list = ['Age', 'Tenure', 'MonthlyCharges', 'TotalCharges']
 fig = plt.figure(figsize=(15,10))
@@ -637,17 +892,6 @@ for i in range(len(num_list)):
     sns.boxplot(x='Churn', y=column, data=df, palette='RdYlBu_r')
 
 df.select_dtypes(include='object').nunique()
-
-# from sklearn import preprocessing
-# for col in df.select_dtypes(include=['object']).columns:
-#     label_encoder=preprocessing.LabelEncoder()
-#     label_encoder.fit(df[col].unique())
-#     df[col]=label_encoder.transform(df[col])
-#     print(f"{col}:{df[col].unique()}")
-
-#to check the normality of the distribution
-# plt.rcParams["figure.figsize"] = (9,3)
-# plt.xlim([0,100])
 
 plt.subplot(1, 2, 2)
 Age = plt.hist(df['Age'], density = True, color = "green")
@@ -664,33 +908,6 @@ plt.title("Monthly Charges")
 plt.subplot(1, 2, 2)
 TotalCharges = plt.hist(df['TotalCharges'], density = True, color = "blue")
 plt.title("TotalCharges")
-
-# sns.set_theme(style="whitegrid")
-
-# plt.figure(figsize=(10, 6))
-# sns.barplot(x='Contract', y='Age', hue='Gender', data=df, palette='muted')
-
-# plt.title('Age by contract and  Gender')
-# plt.xlabel('Customers Contract')
-# plt.ylabel("Customer's age")
-# plt.legend(title ='Gender')
-# plt.legend()
-# # Display the plot
-# plt.show()
-
-# plt.figure(figsize=(6, 4))
-# sns.barplot(x='Gender', y='MonthlyCharges', data=df)
-# plt.title('Monthly Charges by Gender')
-# plt.xlabel('Gender')
-# plt.ylabel('MonthlyCharges')
-# plt.show()
-
-# plt.figure(figsize=(6, 4))
-# sns.barplot(x='Gender', y='Tenure', data=df)
-# plt.title('Tenure by Gender')
-# plt.xlabel('Gender')
-# plt.ylabel('Tenure')
-# plt.show()
 
 from scipy import stats
 
@@ -710,8 +927,6 @@ for i in num_cols.columns:
 
 """**Now let's start Feature Engineering part. Here, we don't need to do much more as we just need to convert caterogical feature into numerical features. To accolplish this we will use different type of encoding methods provided by sklearn library. like label encoder, onehotencoder, ordinal encoder, binary encoder arrordingly**"""
 
-df.Contract.value_counts()
-
 # let's convert contract values into numerical.
 from sklearn.preprocessing import LabelEncoder
 
@@ -724,7 +939,6 @@ df['Payment_Method'] = le.fit_transform(df['PaymentMethod'])
 df['Internet_Service'] = le.fit_transform(df['InternetService'])
 df['Gender_encoded'] = le.fit_transform(df['Gender'])
 
-import pandas as pd
 # Define the mapping
 onlinesecurity_mapping = {'Yes': 1, 'No': 0}
 onlinebackup_mapping = {'Yes':1, 'No':0}
@@ -831,8 +1045,6 @@ print(np.isfinite(df).sum())
 
 df['ComputedOverallCharges'] = df['MonthlyCharges'] + df['TotalCharges']
 
-df.head(6452)
-
 # Drop original columns.
 df.drop(columns=['MonthlyCharges','TotalCharges', 'OverallCharges'],axis=1, inplace=True)
 
@@ -871,8 +1083,6 @@ df["ComputedOverallCharges"].min()
 df["ComputedOverallCharges"].max()
 
 df['ComputedOverallCharges'].idxmin()
-
-df.iloc[6450]
 
 # import minmaxscaler and standarscaler from sklearn
 from sklearn.preprocessing import MinMaxScaler
@@ -918,23 +1128,11 @@ df.head(2)
 
 df.corr()
 
-# # Create the heatmap
-# plt.figure(figsize=(15, 9))
-# sns.heatmap(df.corr(), annot=True, cmap='coolwarm', center=0)
-# plt.title('Correlation Matrix Heatmap')
-# plt.show()
-
 # Create the heatmap
 plt.figure(figsize=(20, 9))
 sns.heatmap(df.corr(), annot=True, cmap='plasma', center=0)
 plt.title('Correlation Matrix Heatmap')
 plt.show()
-
-# Create the heatmap
-# plt.figure(figsize=(20, 9))
-# sns.heatmap(df.corr(), annot=True, cmap='PuBu', center=0)
-# plt.title('Correlation Matrix Heatmap')
-# plt.show()
 
 # Import required methods from sklearn
 from sklearn.ensemble import GradientBoostingClassifier
@@ -944,25 +1142,8 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestClassifier
 
-# from sklearn.ensemble import RandomForestClassifier
-
 X = df.drop('Churned', axis=1)
 y = df['Churned']
-
-# model = RandomForestClassifier()
-# model.fit(X, y)
-
-# feature_importances = model.feature_importances_
-
-# feature_importances
-
-# corr_matrix = df.corr()
-# corr_with_target = corr_matrix['Churned'].abs().sort_values(ascending=False)
-
-# corr_with_target
-
-# from sklearn.ensemble import RandomForestClassifier
-# from sklearn.model_selection import train_test_split
 
 # Split data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -1063,8 +1244,6 @@ print(f"Mean Accuracy: {np.mean(cv_scores):.2f}")
 # print(feature_importance_df)
 
 import pickle
-
-# import pickle
 
 # # Load the model
 # model_path = 'trained_model.pkl'

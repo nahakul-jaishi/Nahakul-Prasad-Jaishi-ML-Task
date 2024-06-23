@@ -23,3 +23,5 @@ EXPOSE 5000
 
 # Specify the command to run on container start
 CMD ["flask", "run"]
+
+# Check the docker image run file to create docker image and rung the application
